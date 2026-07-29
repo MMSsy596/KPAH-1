@@ -8,7 +8,7 @@ Last updated: 2026-07-29
 
 | Phase | Status | Result |
 | --- | --- | --- |
-| 0. Collect upstream material | Complete | Five source snapshots and the user-provided client are stored locally and hashed. |
+| 0. Collect and synchronize upstream material | Complete | Five source snapshots and the user-provided client are stored, hashed and pushed to the GitHub `main` branch with Git LFS. |
 | 1. Create reproducible workspace | Not started | Next phase. |
 | 2. Provision Java and MariaDB | Not started | JDK and database tooling are not installed or verified yet. |
 | 3. Build baseline game server | Not started | No repository binary has been executed. |
@@ -31,6 +31,15 @@ The first playable milestone is complete when all of the following work without 
 6. Select or create a character.
 7. Enter a map, see monsters, move and perform combat.
 8. Save the character and load it again after a full restart.
+
+## Repository synchronization
+
+- Remote: `https://github.com/cimerkong-jpg/KPAH.git`
+- Branch: `main`
+- Initial source commit: `4853a0f`
+- Git LFS patterns: ZIP, JAR, EXE, DLL, 7Z and RAR
+- Initial LFS upload: 96 unique objects, approximately 357 MB
+- Status: complete
 
 ## Source inventory
 
