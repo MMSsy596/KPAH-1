@@ -1,0 +1,25 @@
+[launcher] microedition.platform=nokia/1/1|kpah-auth-v1|1776824066|EE49A49EEA3EF75D1BD4CDC0C055E5B9F914F51536C09AD551D6A4CF48876F04|938C98E23BB20F95286CF7C8D631534F913EF59FD0B581FB68DE4004A2FD6888
+[launcher] microedition.configuration=CLDC-1.1
+[launcher] microedition.profiles=MIDP-2.0
+[INFO] Loading MIDlet: Khi Phach Anh Hung | Main Class: game.GameMidlet
+[INFO] javax.microedition.midlet.MIDlet: Create MIDlet
+[INFO] javax.microedition.lcdui.Canvas: Create Canvas:240, 320
+agent: ================0
+provider: =============0
+client pro : =======0
+ban thuong 2.7.0
+ket noi socket://163.61.183.129:19129
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/hat/34' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/hat/34' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'newEf/42.png' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'newEf/42.png' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/body/54' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/body/54' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/leg/54' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/leg/54' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/head/27' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/head/27' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/hat/35' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/hat/35' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/coat/15' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar
+[ERROR] org.recompile.mobile.MIDletLoader: Couldn't find resource 'c/coat/15' in jar: file:/C:/KPAH_Auto_Runtime/client-cache/1093757_1775473736642_grinding2.jar

@@ -1,0 +1,11 @@
+[launcher] microedition.platform=nokia/1/1|kpah-auth-v1|1776824154|EE49A49EEA3EF75D1BD4CDC0C055E5B9F914F51536C09AD551D6A4CF48876F04|FD4BED2227F7F16F6685AF161D8F2F1C9092D36786B0C731AD09801593F14281
+[launcher] microedition.configuration=CLDC-1.1
+[launcher] microedition.profiles=MIDP-2.0
+[INFO] Loading MIDlet: Khi Phach Anh Hung | Main Class: game.GameMidlet
+[INFO] javax.microedition.midlet.MIDlet: Create MIDlet
+[INFO] javax.microedition.lcdui.Canvas: Create Canvas:240, 320
+agent: ================0
+provider: =============0
+client pro : =======0
+ban thuong 2.7.0
+ket noi socket://163.61.183.129:19129

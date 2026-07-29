@@ -1,0 +1,18 @@
+# Local integration and runtime outputs. Vendor snapshots remain trackable.
+/work/**/build/
+/work/**/dist/
+/runtime-local/
+/logs/
+*.log
+*.pid
+
+# Local-only configuration and generated secrets.
+/local-config/
+*.local.ini
+*.local.env
+
+# IDE and operating-system state created at the project root.
+/.idea/
+/.vscode/
+/Thumbs.db
+/Desktop.ini

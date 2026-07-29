@@ -1,0 +1,4 @@
+[launcher] microedition.platform=nokia/1/1|kpah-auth-v1|1776822569|7BF6001829A3F0AA2BD1E54F03B3AAD091C94C9E849B2C8019CFCA0518BF1AAB|4FED6E84F03B1EEADA176CB5DD6B5DFB7B6EE6F37C87165F173B3176FB8CE2A7
+[launcher] microedition.configuration=CLDC-1.1
+[launcher] microedition.profiles=MIDP-2.0
+[INFO] org.recompile.mobile.MobilePlatform: different encoding: UTF-8 while it should be ISO_8859_1. Restarting freeJ2ME to apply new encoding

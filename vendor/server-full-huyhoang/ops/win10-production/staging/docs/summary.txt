@@ -1,0 +1,25 @@
+﻿KPAH Win10 production staging summary
+Generated: 2026-04-26 21:15:47
+Repo root: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL
+Stage root: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\ops\win10-production\staging
+
+Current ports
+- Game: 19129
+- Login: 8023
+- Local admin: 18023
+- Web stage: 8088
+- PHP FastCGI stage: 9072
+
+Generated files
+- nginx/conf/nginx.conf
+- services/kpah-game.cmd
+- services/kpah-login.cmd
+- services/kpah-web-php.cmd
+- services/kpah-nginx.cmd
+- services/winsw/*.xml
+- ..\apply-win10-hardening.ps1
+
+Safe usage
+- Chua dung de stop process dang chay
+- Co script hardening Win10 rieng, chi chay khi da chot danh sach cong public
+- Dung trong mot cua so cutover rieng khi den lich bao tri

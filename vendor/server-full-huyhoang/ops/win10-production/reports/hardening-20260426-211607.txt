@@ -1,0 +1,9 @@
+﻿KPAH Win10 hardening applied
+Generated: 2026-04-26 21:16:07
+RepoRoot: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL
+Game allow port: 19129
+Public web allow ports: 8088
+Blocked private ports: 8023,18023,9072,3306
+
+Rules are grouped under: KPAH Win10
+Rollback: powershell -ExecutionPolicy Bypass -File .\ops\win10-production\rollback-win10-hardening.ps1

@@ -1,0 +1,6 @@
+﻿Recommended firewall plan
+- Public allow: TCP 19129 (game), TCP 8088 or 80/443 via Nginx
+- Private only: TCP 8023 (login socket)
+- Private only: TCP 18023 (local admin)
+- Private only: TCP 9072
+- Private only: DB 3306

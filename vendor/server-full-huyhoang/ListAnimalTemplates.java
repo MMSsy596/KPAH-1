@@ -1,0 +1,2 @@
+import java.sql.*;
+public class ListAnimalTemplates { public static void main(String[] args) throws Exception { String url="jdbc:mysql://localhost:3306/kpah2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Bangkok"; try(Connection c=DriverManager.getConnection(url,"root","9nM2bMudGKuYsNrkxAA43-Hduo52")) { DatabaseMetaData md=c.getMetaData(); try(ResultSet cols=md.getColumns("kpah2", null, "data_item", "%")) { while(cols.next()) System.out.println(cols.getString("COLUMN_NAME")+":"+cols.getString("TYPE_NAME")); } } } }

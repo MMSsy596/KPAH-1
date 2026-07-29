@@ -1,0 +1,30 @@
+Summary for portable_release\KPAH_Auto_Portable\app\grinding2.jar
+Decompiled with CFR 0.152
+
+
+af
+----------------------------
+
+b()
+  Unable to fully structure code
+
+
+dj
+----------------------------
+
+b()
+  Unable to fully structure code
+
+
+hs
+----------------------------
+
+run()
+  Unable to fully structure code
+
+
+n
+----------------------------
+
+a()
+  Handled impossible loop by duplicating code

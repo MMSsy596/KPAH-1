@@ -1,0 +1,42 @@
+# IDE
+.vscode/
+.idea/
+*.iml
+nbproject/private/
+
+# Build outputs
+/build/
+/build_admin_local/
+/build_check/
+/build_tmp/
+/dist/
+/portable_release/
+/db_backups/
+/backups/
+/exports/
+/logs/
+/tools/license_admin/out/
+
+# Web build/cache
+node_modules/
+.next/
+
+# Generated binaries
+*.class
+/KPAH.jar
+/KPAH-online-license.jar
+/KPAH_admin_luong_patch.jar
+
+# Archives
+*.zip
+*.rar
+*.7z
+
+# Crash dumps / logs
+*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# Existing ignores
+/web/config.local.php
+/var/

@@ -1,0 +1,14 @@
+﻿<service>
+  <id>kpah-game</id>
+  <name>KPAH Game Server</name>
+  <description>KPAH Java game server</description>
+  <executable>C:\Program Files\Java\jdk-23\bin\java.exe</executable>
+  <arguments>-Xms4096m -Xmx4096m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+ParallelRefProcEnabled -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 -Djava.awt.headless=true -jar C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\KPAH.jar</arguments>
+  <workingdirectory>C:\Users\Administrator\Downloads\SEVER-KPAH-FULL</workingdirectory>
+  <logpath>C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\ops\win10-production\staging\services\logs</logpath>
+  <log mode="roll-by-size"></log>
+  <startmode>Automatic</startmode>
+  <depend>kpah-mysql</depend>
+  <depend>kpah-login</depend>
+  <onfailure action="restart" delay="10 sec" />
+</service>

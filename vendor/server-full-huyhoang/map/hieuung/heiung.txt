@@ -1,0 +1,9 @@
+ m = new Message(MainCmd.CUSTOM_ANIMATION);
+   m.dos.writeByte(0); // type 0 - animation 1 - getdata
+   m.dos.writeByte(AnimationData.ANIMATION_PHAO); //6
+   m.dos.writeByte(AnimationData.ANIMATION_BY_MAP);//1
+   m.dos.writeByte(78); // So tick lap lai hieu ung
+   m.dos.writeShort(-1);// So lan lap -1 la lap vo tan
+   m.dos.writeByte(AnimationData.ANIMATION_LOOP_TYPE_FIX);//0 lap tai cho
+   m.dos.writeShort(340);//Vi tri lap x
+   m.dos.writeShort(103);// Vi tri lap y

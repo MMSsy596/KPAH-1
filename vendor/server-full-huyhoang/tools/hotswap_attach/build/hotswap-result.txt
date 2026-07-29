@@ -1,0 +1,3 @@
+ok=1
+classes=real.Map,real.Monster
+classes_dir=C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\build\hotfix_luckybag\classes

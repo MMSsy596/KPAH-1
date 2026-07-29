@@ -1,0 +1,7 @@
+THONG TIN QUAN TRI KPAH
+Route admin: /noi-vu-kpah-73x9
+Dang nhap: /noi-vu-kpah-73x9/login
+Tai khoan: masteradmin
+Mat khau tam thoi: yNZ2bW36KPDXqN8p
+Tao luc: 2026-04-27T05:29:52.730Z
+Vui long dang nhap va doi mat khau ngay sau khi vao he thong.

@@ -1,0 +1,26 @@
+﻿Chào mừng bạn đến với trò chơi KPAH! Bạn đã sẵn sàng cho chuyến phiêu lưu của mình chưa?
+x1I. Phím điều khiển
+x0  * Phím mũi tên hoặc 2,4,6,8: Di chuyển nhân vật
+x0  * Phím 5 hoặc phím chọn giữa: Đánh thường. Phím 1,3: Dùng kỹ năng khác nếu đã học
+x0  * Phím 7: Sử dụng bình HP, Phím 9: Sử dụng bình MP (nếu còn)
+x0  * Phím chọn trái: Mở Menu, Phím chọn phải: thay đổi mục tiêu nếu có nhiều đối tượng đứng cạnh.
+x0  * Phím chọn phải: thay đổi mục tiêu nếu có nhiều đối tượng xung quanh.
+x0  * Phím #: Chat.
+x0  * Phím *: mở menu mời party, trao đổi, nhắn tin, kết bạn, xem thông tin, xuống ngựa.
+x0  * Phím 0: chuyển đổi bảng kỹ năng.
+x1II. Cách chơi
+x0  * Bạn có thể mua các vật phẩm đặc biệt bằng cách vào Menu chọn Cửa Hàng.
+x0  * Bạn có thể mua các vật phẩm tại các NPC trong làng. Lưu ý: phải vào nhà để có thể giao dịch.
+x0  * Bạn phải làm xong nhiệm vụ ra mắt tiền bối (NV đầu tiên) mới có thể đánh quái được.
+x0  * Khi đánh quái bạn sẽ ngẫu nhiên nhận được điểm kinh nghiệm, xu hoặc vật phẩm.
+x0  * Khi lên cấp bạn sẽ được thưởng 5 điểm tiềm năng và 1 điểm kỹ năng. Hãy vào mục Bản thân để tăng những điểm bạn có theo ý muốn.
+x0  * Nhân vật của bạn dưới cấp 10 sẽ được bảo hộ và không sử dụng được chức năng đồ sát.
+x0  * Khi đồ sát 1 người tương đương với 100 điểm đồ sát, muốn rửa tội bạn có thể sử dụng Phiếu công ích mua tại Cửa Hàng.
+x0  * Bạn chỉ có thể Luyện đồ để tăng tính năng của trang bị khi nhân vật đạt cấp 10.
+x0  * Bạn có thể đeo khăn để PK nếu như không muốn mất điểm kinh nghiệm và vật phẩm, khăn có thể mua tại Bà Tám.
+x0  * Khi trang bị trên người bị hư hỏng bạn có thể mang tới thợ rèn để sửa.
+x0  * Kỹ năng đánh lan chỉ có thể học từ cấp 24 trở đi.
+x0  * Để di chuyển nhanh giữa các map bạn có thể sử dụng Xa phu (có tính phí).
+x0  * Để lên đảo quái vật bạn phải đến bến tàu mua vé để đi tàu ra đảo.
+x0  * Khi hành trang đã đầy bạn xuống ngựa sẽ bị mất ngựa.
+x0  * Chúc các bạn có cuộc hành trình vui vẻ !

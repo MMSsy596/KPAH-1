@@ -1,0 +1,2 @@
+import java.sql.*;
+public class ListTables { public static void main(String[] args) throws Exception { String url="jdbc:mysql://localhost:3306/kpah2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Bangkok"; try(Connection c=DriverManager.getConnection(url,"root","9nM2bMudGKuYsNrkxAA43-Hduo52")) { DatabaseMetaData md=c.getMetaData(); try(ResultSet rs=md.getTables("kpah2", null, "%", new String[]{"TABLE"})) { while(rs.next()) System.out.println(rs.getString("TABLE_NAME")); } } } }

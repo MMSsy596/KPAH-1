@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kpahpau:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/kpahpau_jar</output-path>
+    <root id="archive" name="kpahpau.jar">
+      <element id="module-output" name="kpahpau" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/json-20250107.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jxl-2.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/mysql-connector-java-5.1.49.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/NQSH_5h.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

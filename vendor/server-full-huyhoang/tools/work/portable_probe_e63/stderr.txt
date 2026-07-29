@@ -1,0 +1,13 @@
+java.nio.file.AccessDeniedException: C:\KPAH_Auto_Runtime\client-cache\98304_1774759702376_client
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(Unknown Source)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(Unknown Source)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(Unknown Source)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.newByteChannel(Unknown Source)
+	at java.base/java.nio.file.Files.newByteChannel(Unknown Source)
+	at java.base/java.nio.file.Files.newByteChannel(Unknown Source)
+	at java.base/java.nio.file.spi.FileSystemProvider.newInputStream(Unknown Source)
+	at java.base/java.nio.file.Files.newInputStream(Unknown Source)
+	at KpahAutologinLauncher.sha256Hex(KpahAutologinLauncher.java:518)
+	at KpahAutologinLauncher.buildPlatformSignature(KpahAutologinLauncher.java:509)
+	at KpahAutologinLauncher.prepareJ2meSystemProperties(KpahAutologinLauncher.java:459)
+	at KpahAutologinLauncher.main(KpahAutologinLauncher.java:404)

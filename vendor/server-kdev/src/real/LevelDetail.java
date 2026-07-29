@@ -1,0 +1,177 @@
+package real;
+
+import data.Database;
+
+public class LevelDetail {
+   private long exp;
+   public int lv;
+   public long expRemain;
+   public long expRequireOld;
+   public int percent;
+   public static long[] expTemplate = new long[]{200L, 800L, 2000L, 4000L, 8000L, 16000L, 32000L, 48000L, 72000L, 108000L, 162000L, 226800L, 317520L, 444528L, 622339L, 871274L, 1132656L, 1472452L, 1914187L, 2488443L, 2986131L, 3583357L, 4300028L, 5160033L, 6192039L, 7430446L, 8916535L, 10699842L, 12839810L, 15407772L, 18489326L, 22187191L, 26624629L, 31949554L, 38339464L, 46007356L, 55208827L, 66250592L, 79500710L, 95400852L, 114481022L, 137377226L, 164852671L, 197823205L, 237387846L, 284865415L, 341838498L, 410206197L, 492247436L, 590696923L, 708836307L, 850603568L, 1020724281L, 1224869137L, 1469842964L, 1763811556L, 2116573867L, 2539888640L, 3047866368L, 3657439641L, 4388927569L, 5266713082L, 6320055698L, 7584066837L, 9100880204L, 10921056244L, 13105267492L, 15726320990L, 18871585188L, 22645902225L, 33968853337L, 50953280005L, 76429920007L, 114644880010L, 171967320015L, 257950980022L, 386926470033L, 580389705049L, 870584557573L, 1305876836359L, 1958815254538L, 2938222881807L, 4407334322710L, 6611001484065L, 9916502226098L, 14874753339147L, 22312130008720L};
+   public static long[] expMain = new long[]{0L, 200L, 800L, 2000L, 4000L, 8000L, 16000L, 32000L, 48000L, 72000L, 108000L, 162000L, 226800L, 317520L, 444528L, 622339L, 871274L, 1132656L, 1472452L, 1914187L, 2488443L, 2986131L, 3583357L, 4300028L, 5160033L, 6192039L, 7430446L, 8916535L, 10699842L, 12839810L, 15407772L, 18489326L, 22187191L, 26624629L, 31949554L, 38339464L, 46007356L, 55208827L, 66250592L, 79500710L, 95400852L, 114481022L, 137377226L, 164852671L, 197823205L, 237387846L, 284865415L, 341838498L, 410206197L, 492247436L, 590696923L, 708836307L, 850603568L, 1020724281L, 1224869137L, 1469842964L, 1763811556L, 2116573867L, 2539888640L, 3047866368L, 3657439641L, 4388927569L, 5266713082L, 6320055698L, 7584066837L, 9100880204L, 10921056244L, 13105267492L, 15726320990L, 18871585188L, 22645902225L, 33968853337L, 50953280005L, 76429920007L, 114644880010L, 171967320015L, 257950980022L, 386926470033L, 580389705049L, 870584557573L, 1305876836359L, 1958815254538L, 2938222881807L, 4407334322710L, 6611001484065L, 9916502226098L, 14874753339147L, 22312130008720L, 33468195013080L, 50202292519620L, 75303438779430L};
+   public static long[] expRequire = new long[]{0L, 200L, 600L, 1200L, 2000L, 4000L, 8000L, 16000L, 16000L, 24000L, 36000L, 54000L, 64800L, 90720L, 127008L, 177811L, 248935L, 261382L, 339796L, 441735L, 574256L, 497688L, 597226L, 716671L, 860005L, 1032006L, 1238407L, 1486089L, 1783307L, 2139968L, 2567962L, 3081554L, 3697865L, 4437438L, 5324925L, 6389910L, 7667892L, 9201471L, 11041765L, 13250118L, 15900142L, 19080170L, 22896204L, 27475445L, 32970534L, 39564641L, 47477569L, 56973083L, 68367699L, 82041239L, 98449487L, 118139384L, 141767261L, 170120713L, 204144856L, 244973827L, 293968592L, 352762311L, 423314773L, 507977728L, 609573273L, 731487928L, 877785513L, 1053342616L, 1264011139L, 1516813367L, 1820176040L, 2184211248L, 2621053498L, 3145264198L, 3774317037L, 11322951112L, 16984426668L, 25476640002L, 38214960003L, 57322440005L, 85983660007L, 128975490011L, 193463235016L, 290194852524L, 435292278786L, 652938418179L, 979407627269L, 1469111440903L, 2203667161355L, 3305500742033L, 4958251113049L, 7437376669573L, 11156065004360L, 16734097506540L, 25101146259810L, 0L};
+   public static int[] allSkillPointLV = new int[]{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710, 720, 730, 740, 750, 760, 770, 780, 790, 800, 810, 820, 830, 840, 850, 860, 870, 880, 890};
+   public static int[] pcXP;
+   static long[] xpUyThac;
+
+   static {
+      System.err.println("TONG LEVEL: " + LevelDetail.expMain.length);
+      long[] expMain = new long[]{0L, 200L, 800L, 2000L, 4000L, 8000L, 16000L, 32000L, 48000L, 72000L, 108000L, 162000L, 226800L, 317520L, 444528L, 622339L, 871274L, 1132656L, 1472452L, 1914187L, 2488443L, 2986131L, 3583357L, 4300028L, 5160033L, 6192039L, 7430446L, 8916535L, 10699842L, 12839810L, 15407772L, 18489326L, 22187191L, 26624629L, 31949554L, 38339464L, 46007356L, 55208827L, 66250592L, 79500710L, 95400852L, 114481022L, 137377226L, 164852671L, 197823205L, 237387846L, 284865415L, 341838498L, 410206197L, 492247436L, 590696923L, 708836307L, 850603568L, 1020724281L, 1224869137L, 1469842964L, 1763811556L, 2116573867L, 2539888640L, 3047866368L, 3657439641L, 4388927569L, 5266713082L, 6320055698L, 7584066837L, 9100880204L, 10921056244L, 13105267492L, 15726320990L, 18871585188L, 22645902225L, 33968853337L, 50953280005L, 76429920007L, 114644880010L, 171967320015L, 257950980022L, 386926470033L, 580389705049L, 870584557573L, 1305876836359L, 1958815254538L, 2938222881807L, 4407334322710L, 6611001484065L, 9916502226098L, 14874753339147L, 22312130008720L, 33468195013080L, 50202292519620L, 75303438779430L};
+      long[] expRequire = new long[]{0L, 200L, 600L, 1200L, 2000L, 4000L, 8000L, 16000L, 16000L, 24000L, 36000L, 54000L, 64800L, 90720L, 127008L, 177811L, 248935L, 261382L, 339796L, 441735L, 574256L, 497688L, 597226L, 716671L, 860005L, 1032006L, 1238407L, 1486089L, 1783307L, 2139968L, 2567962L, 3081554L, 3697865L, 4437438L, 5324925L, 6389910L, 7667892L, 9201471L, 11041765L, 13250118L, 15900142L, 19080170L, 22896204L, 27475445L, 32970534L, 39564641L, 47477569L, 56973083L, 68367699L, 82041239L, 98449487L, 118139384L, 141767261L, 170120713L, 204144856L, 244973827L, 293968592L, 352762311L, 423314773L, 507977728L, 609573273L, 731487928L, 877785513L, 1053342616L, 1264011139L, 1516813367L, 1820176040L, 2184211248L, 2621053498L, 3145264198L, 3774317037L, 11322951112L, 16984426668L, 25476640002L, 38214960003L, 57322440005L, 85983660007L, 128975490011L, 193463235016L, 290194852524L, 435292278786L, 652938418179L, 979407627269L, 1469111440903L, 2203667161355L, 3305500742033L, 4958251113049L, 7437376669573L, 11156065004360L, 16734097506540L, 25101146259810L, 0L};
+      long exp = 6322974467L;
+   
+      int lv = 0;
+      int percent = 0;
+
+      for(short i = 0; i < expMain.length && exp >= expMain[i]; ++i) {
+         ++lv;
+      }
+
+      if (lv >= expMain.length) {
+         lv = expMain.length;
+         long var10000 = expMain[expMain.length - 1];
+      } else {
+         percent = (int)((exp - expMain[lv - 1]) * 1000L / expRequire[lv]);
+      }
+
+      pcXP = new int[]{10, 100, 1000, 10000, 10000};
+      xpUyThac = new long[]{79500710L, 95400852L, 114481022L, 137377226L, 164852671L, 197823205L, 237387846L, 284865415L, 341838498L, 410206197L, 492247436L, 590696923L, 708836307L, 850603568L, 1020724281L, 1224869137L, 1469842964L, 1763811556L, 2116573867L, 2539888640L, 3047866368L, 3657439641L, 4388927569L, 5266713082L, 6320055698L, 7584066837L, 9100880204L, 10921056244L, 13105267492L, 15726320990L, 18871585188L, 22645902225L, 28307377781L, 33968853337L, 50953280005L, 63691600006L, 76429920007L, 89168240008L, 101906560009L, 114644880010L, 143306100012L, 171967320015L, 257950980022L, 386926470033L, 580389705049L, 725487131311L, 870584557573L, 1305876836359L};
+   }
+
+   public static long getXpFromLevel(int level) {
+      return level < expMain.length ? expMain[level - 1] : 0L;
+   }
+
+   public int getBasicPoint(int lv) {
+      return allSkillPointLV[lv - 1] / 2;
+   }
+
+   public static int getLevelFromExp(long exp) {
+      int lv = 0;
+
+      for(short i = 0; i < expMain.length && exp >= expMain[i]; ++i) {
+         ++lv;
+      }
+
+      long percent = 0L;
+      if (lv >= expMain.length) {
+         lv = expMain.length;
+         long var10000 = expMain[expMain.length - 1];
+      } else {
+         percent = (long)((int)((exp - expMain[lv - 1]) * 1000L / expRequire[lv]));
+      }
+
+      return lv;
+   }
+
+   public boolean setExp(long exp, int old, String charname, String info) {
+      int oldLv = this.lv;
+      long oldExp = this.exp;
+      this.setExpNew(exp);
+      if (this.lv > oldLv) {
+         Database.instance.saveOrtherLog("", charname, info + " olv:" + oldLv + " oexp: " + oldExp + " >> lv: " + this.lv + " exp: " + this.exp + " >> addthem: " + exp, "lenlv");
+      }
+
+      return true;
+   }
+
+   public void resetExp2Lv(int lv, int killer) {
+      if (killer <= 0) {
+         this.exp = expMain[lv - 1];
+         this.setExpNew(this.exp);
+      }
+
+   }
+
+   public int setExpNew(long exp) {
+      this.lv = 0;
+      this.exp = exp;
+
+      for(short i = 0; i < expMain.length && exp >= expMain[i]; ++i) {
+         ++this.lv;
+      }
+
+      if (this.lv >= expMain.length) {
+         this.lv = expMain.length;
+         this.exp = expMain[expMain.length - 1];
+         long var10000 = expMain[expMain.length - 1];
+         this.percent = 0;
+         return -1;
+      } else {
+         this.percent = (int)((exp - expMain[this.lv - 1]) * 1000L / expRequire[this.lv]);
+         return this.percent;
+      }
+   }
+
+   public void mapExp2NewExp(int lv, int pc) {
+      if (lv < 1) {
+         lv = 1;
+      }
+
+      long exp = expMain[lv - 1];
+      long expPc = expRequire[lv] * (long)pc / 1000L;
+      int percent = this.setExpNew(exp + expPc);
+      if (percent > -1 && percent < pc) {
+         long exp1 = expRequire[lv] * (long)(pc - percent) / 1000L;
+         if (exp1 == 0L) {
+            exp1 = 1L;
+         }
+
+         this.setExpNew(exp + expPc + exp1);
+      }
+
+   }
+
+   public void setMaxXP(long xp) {
+      this.exp = xp;
+   }
+
+   public long getExp() {
+      if (this.exp < 0L) {
+         this.exp = 0L;
+      }
+
+      return this.exp;
+   }
+
+   public long get1PCExp() {
+      try {
+         long exp = expRequire[this.lv] / 100L;
+         return exp;
+      } catch (Exception var3) {
+         return 0L;
+      }
+   }
+
+   public static long getPCExp(int pc, int lv) {
+      try {
+         long exp = expRequire[lv] * (long)pc / 100L;
+         return exp;
+      } catch (Exception var4) {
+         return 0L;
+      }
+   }
+
+   public static long getPCExp2(double pc, int lv) {
+      try {
+         long exp = (long)((double)expRequire[lv] * pc / 1000000.0D);
+         return exp;
+      } catch (Exception var5) {
+         return 0L;
+      }
+   }
+
+   public long getXPLost(int killer, Char p) {
+      try {
+         if (!p.map.isvanTienTran() && !p.isNotDownExp()) {
+            long exp = expRequire[this.lv] / (long)(killer > 0 ? 100 : 1000);
+            return exp;
+         } else {
+            return 0L;
+         }
+      } catch (Exception var5) {
+         return 0L;
+      }
+   }
+}

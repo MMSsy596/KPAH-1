@@ -1,0 +1,16 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  javax.microedition.lcdui.Image
+ */
+import javax.microedition.lcdui.Image;
+
+public final class dh {
+    public Image a;
+    public int b;
+    public boolean c;
+    public long d;
+    public byte e = 0;
+}
+
