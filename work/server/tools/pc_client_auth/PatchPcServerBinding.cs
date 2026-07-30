@@ -9,7 +9,7 @@ public static class PatchPcServerBinding
     private const string LegacyHost = "163.61.183.129";
     private static string forcedServerName = "KPAH";
     private static string forcedHost = "127.0.0.1";
-    private static short forcedPort = 19129;
+    private static int forcedPort = 19129;
     private static sbyte forcedIndex = 0;
     private static string forcedServerListUrl = "http://127.0.0.1:18080/NQSH2.txt";
 
@@ -32,10 +32,16 @@ public static class PatchPcServerBinding
         {
             forcedHost = args[1].Trim();
         }
-        if (args.Length >= 3 && !short.TryParse(args[2], out forcedPort))
+        int parsedPort = forcedPort;
+        if (args.Length >= 3 &&
+            (!int.TryParse(args[2], out parsedPort) || parsedPort < 1 || parsedPort > 65535))
         {
             Console.Error.WriteLine("Port khong hop le: " + args[2]);
             return 3;
+        }
+        if (args.Length >= 3)
+        {
+            forcedPort = parsedPort;
         }
         if (args.Length >= 4 && !string.IsNullOrWhiteSpace(args[3]))
         {
@@ -278,7 +284,7 @@ public static class PatchPcServerBinding
         il.Append(il.Create(OpCodes.Stsfld, field));
     }
 
-    private static void AppendSingleShortArrayAssignment(ILProcessor il, FieldDefinition field, short value)
+    private static void AppendSingleShortArrayAssignment(ILProcessor il, FieldDefinition field, int value)
     {
         ArrayType arrayType = (ArrayType)field.FieldType;
         il.Append(il.Create(OpCodes.Ldc_I4_1));
