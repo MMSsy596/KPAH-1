@@ -6,6 +6,8 @@ param(
     [string]$SecondCharacter = "abc1",
     [switch]$EnableParty,
     [switch]$TestSocial,
+    [switch]$TestQuest,
+    [switch]$TestLoot,
     [int]$TestMapId = 343
 )
 
@@ -52,7 +54,10 @@ function Get-CharacterSnapshot {
     $quoted = $CharacterNames | ForEach-Object { "'" + $_.Replace("'", "''") + "'" }
     $sql = @"
 SELECT c.charname,c.lastLv,c.xp,MD5(COALESCE(c.inven,'')),MD5(COALESCE(c.potion,'')),
+       MD5(COALESCE(c.equip,'')),MD5(COALESCE(c.skill,'')),
        LENGTH(COALESCE(c.inven,'')),LENGTH(COALESCE(c.potion,'')),
+       LENGTH(COALESCE(c.equip,'')),LENGTH(COALESCE(c.skill,'')),
+       c.gold,c.luong,c.luonglock,c.skillpoint,c.basepoint,
        COALESCE(q.monskilled,''),COALESCE(q.itemget,''),COALESCE(q.isfinish,'')
 FROM kpah2.tob_char c
 LEFT JOIN kpah2.tob_char_quest q ON q.id_char=c.id
@@ -151,6 +156,8 @@ New-ClientConfig -Path $configFiles[1] -Username $SecondUsername -Password $test
 $before = Get-CharacterSnapshot -CharacterNames @($FirstCharacter, $SecondCharacter)
 $processes = @()
 $socialResult = "not_requested"
+$questResult = "not_requested"
+$lootResult = "not_requested"
 try {
     for ($i = 0; $i -lt 2; $i++) {
         $arguments = @(
@@ -182,9 +189,9 @@ try {
             Where-Object { $_.OwningProcess -in $processes.Id } |
             Select-Object -ExpandProperty OwningProcess -Unique
     )
+    $serverIni = Get-Content -LiteralPath (Join-Path $serverRoot "server.ini")
+    $adminToken = (($serverIni | Where-Object { $_ -match "^\s*sv\.localAdminToken\s*=" } | Select-Object -First 1) -split "=", 2)[1].Trim()
     if ($bothInGame -and $TestMapId -gt 0) {
-        $serverIni = Get-Content -LiteralPath (Join-Path $serverRoot "server.ini")
-        $adminToken = (($serverIni | Where-Object { $_ -match "^\s*sv\.localAdminToken\s*=" } | Select-Object -First 1) -split "=", 2)[1].Trim()
         foreach ($characterName in @($FirstCharacter, $SecondCharacter)) {
             Invoke-WebRequest `
                 -UseBasicParsing `
@@ -212,6 +219,38 @@ try {
                     }).Content.Trim()
             } catch {
                 $socialResult = if ($_.ErrorDetails.Message) {
+                    $_.ErrorDetails.Message.Trim()
+                } else {
+                    $_.Exception.Message
+                }
+            }
+        }
+        if ($TestQuest) {
+            try {
+                $questResult = (Invoke-WebRequest `
+                    -UseBasicParsing `
+                    -Uri "http://127.0.0.1:18023/api/command/regression/quest" `
+                    -Method Post `
+                    -Headers @{ "X-Admin-Token" = $adminToken } `
+                    -Body @{ playerName = $FirstCharacter }).Content.Trim()
+            } catch {
+                $questResult = if ($_.ErrorDetails.Message) {
+                    $_.ErrorDetails.Message.Trim()
+                } else {
+                    $_.Exception.Message
+                }
+            }
+        }
+        if ($TestLoot) {
+            try {
+                $lootResult = (Invoke-WebRequest `
+                    -UseBasicParsing `
+                    -Uri "http://127.0.0.1:18023/api/command/regression/loot" `
+                    -Method Post `
+                    -Headers @{ "X-Admin-Token" = $adminToken } `
+                    -Body @{ playerName = $FirstCharacter }).Content.Trim()
+            } catch {
+                $lootResult = if ($_.ErrorDetails.Message) {
                     $_.ErrorDetails.Message.Trim()
                 } else {
                     $_.Exception.Message
@@ -247,6 +286,8 @@ $report = @(
     "Duration requested: $DurationSeconds seconds",
     "Party automation enabled: $EnableParty",
     "Social regression requested: $TestSocial",
+    "Quest regression requested: $TestQuest",
+    "Loot regression requested: $TestLoot",
     "Test map: $TestMapId",
     "Both clients reached in-game: $bothInGame",
     "Concurrent established client PIDs: $($connectedPids.Count)",
@@ -254,6 +295,16 @@ $report = @(
     "## Social regression",
     '```properties',
     $socialResult,
+    '```',
+    "",
+    "## Quest regression",
+    '```properties',
+    $questResult,
+    '```',
+    "",
+    "## Loot regression",
+    '```properties',
+    $lootResult,
     '```',
     "",
     "## Database before",
@@ -283,5 +334,7 @@ Write-Output "Regression report: $reportPath"
 Write-Output "Both clients in game: $bothInGame"
 Write-Output "Concurrent game connections: $($connectedPids.Count)"
 Write-Output "Social regression: $socialResult"
+Write-Output "Quest regression: $questResult"
+Write-Output "Loot regression: $lootResult"
 Write-Output "Before: $before"
 Write-Output "After : $after"

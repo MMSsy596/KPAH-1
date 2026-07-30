@@ -1,0 +1,11 @@
+{
+  "relayHost": "52.221.236.58",
+  "relaySshPort": 22,
+  "relayUser": "kpah-tunnel",
+  "remoteGamePort": 19129,
+  "localGameHost": "127.0.0.1",
+  "localGamePort": 19129,
+  "identityFile": "runtime-local/ssh-tunnel/kpah-tunnel",
+  "knownHostsFile": "runtime-local/ssh-tunnel/known_hosts",
+  "reconnectDelaySeconds": 5
+}

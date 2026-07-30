@@ -4,7 +4,7 @@ This document is the working source of truth for rebuilding the KPAH stack local
 
 ## Current status
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 | Phase | Status | Result |
 | --- | --- | --- |
@@ -15,9 +15,9 @@ Last updated: 2026-07-29
 | 4. Localize and build game server | Complete | External application endpoints are locally blocked, configuration secrets are generated in ignored files, and the rebuilt server starts without logged errors. |
 | 5. Start login and game services | Complete | MariaDB, login server, game server and local admin API are running; login/database connection and map/template initialization are confirmed. |
 | 6. Patch a client for localhost | Complete | The supported J2ME client and FreeJ2ME socket transport use localhost and have completed authenticated sessions. |
-| 7. Validate core gameplay loop | In progress | Registration, fresh character, movement, NPC/shop, damage, kill, death and respawn pass. Solo EXP source fix builds; post-fix runtime persistence and loot remain. |
-| 8. Restore optional systems | Not started | Events, admin, gift codes, payment hooks and other optional systems remain disabled. |
-| 9. Produce clean local release | Not started | No release artifact exists yet. |
+| 7. Validate core gameplay loop | Complete | Two-client regression confirms login, combat, EXP persistence, loot pickup/save, first quest state, party, trade and PvP. Latest report: `runtime-local/regression/20260730-152211/REPORT.md`. |
+| 8. Restore optional systems | In progress | Party/trade/PvP, local admin, event controls and the first quest path are operational. Full quest, shop, clan, boss and event matrices still need coverage. |
+| 9. Produce clean local release | In progress | PC installer and mobile JAR releases exist. AWS relay is online; restart-safe tunnel management is implemented but its startup task still needs an elevated install. |
 
 ## Completion definition
 
@@ -440,14 +440,14 @@ Enable one subsystem per checkpoint:
 
 - [ ] NPC shops and item templates.
 - [ ] Skills and buffs.
-- [ ] Parties and friends.
+- [x] Parties.
 - [ ] Clans.
-- [ ] Trade and market.
+- [x] Direct trade.
 - [ ] Bosses.
-- [ ] Quests.
+- [x] First quest path.
 - [ ] Gift codes.
 - [ ] Events.
-- [ ] Admin panel.
+- [x] Local admin API and web admin source.
 - [ ] Web UI.
 - [ ] Client integrity authentication.
 
@@ -492,6 +492,8 @@ After each completed task:
 
 ## Next action
 
-Let the six-hour soak run finish and verify `PASS: True`. Win10 firewall
-hardening was applied successfully at 2026-07-30 11:36:21. Current evidence
-and the remaining command are recorded in `TEN_PART_READINESS.md`.
+Let the six-hour soak run finish and verify `PASS: True`. Install the tunnel
+startup task and hourly-backup task from an elevated PowerShell, then continue
+the optional-system matrix in this order: shops/equipment, skills, full quests,
+clans, bosses and scheduled events. Win10 firewall hardening was applied
+successfully at 2026-07-30 11:36:21.

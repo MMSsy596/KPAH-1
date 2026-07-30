@@ -32,4 +32,19 @@ Ngày kiểm tra: 2026-07-30
    Get-Content C:\Users\Admin\Desktop\KPAH\runtime-local\soak\20260730-112103\REPORT.md
    ```
 
+## Cap nhat regression va van hanh 2026-07-30 15:24
+
+- Bao cao moi: `runtime-local/regression/20260730-152211/REPORT.md`.
+- Hai client cung vao game: `True`; hai ket noi game dong thoi.
+- Social: `party=true,trade=true,pvp=true`, `ok=1`.
+- Nhiem vu dau: `first_quest_already_working`, `ok=1`.
+- Loot: `spawned=1,picked=1,potion_delta=1`, `ok=1`.
+- EXP sau logout tang tu `66 -> 101` va `47 -> 96`; trang thai ky nang,
+  trang bi, potion, tien va diem duoc snapshot cung bao cao.
+- AWS relay `52.221.236.58:19129` da duoc chuyen tu lenh SSH thu cong sang
+  tunnel supervisor. Supervisor tu ket noi lai khi SSH hoac mang bi ngat.
+- Task tu khoi dong tunnel va task backup moi gio chua duoc cai vi phien hien
+  tai khong co quyen Administrator. Hai task nay duoc hien thi trong
+  `Get-KpahServerStatus.ps1`.
+
 Firewall đã hoàn tất. Chỉ còn chờ báo cáo soak kết thúc với `PASS: True` để đánh dấu đủ 10/10 ở mức vận hành.
