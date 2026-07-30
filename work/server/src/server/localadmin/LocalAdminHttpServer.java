@@ -45,6 +45,10 @@ public final class LocalAdminHttpServer {
             httpServer.createContext("/api/command/clean-memory", new CleanMemoryHandler());
             httpServer.createContext("/api/command/announce", new AnnounceHandler());
             httpServer.createContext("/api/command/kick", new KickHandler());
+            httpServer.createContext("/api/command/player/teleport", new TeleportPlayerHandler());
+            httpServer.createContext("/api/command/regression/social", new SocialRegressionHandler());
+            httpServer.createContext("/api/command/regression/quest", new QuestRegressionHandler());
+            httpServer.createContext("/api/command/regression/loot", new LootRegressionHandler());
             httpServer.createContext("/api/command/grant-player", new GrantPlayerHandler());
             httpServer.createContext("/api/command/player/buff-named", new NamedBuffHandler());
             httpServer.createContext("/api/players/online", new OnlinePlayersHandler());
@@ -258,6 +262,60 @@ public final class LocalAdminHttpServer {
                     form.get("materialQty")
             );
             writeCommandResponse(exchange, result);
+        }
+    }
+
+    private static final class TeleportPlayerHandler extends BaseHandler {
+        @Override
+        protected void handleAuthorized(HttpExchange exchange) throws Exception {
+            requireMethod(exchange, "POST");
+            Map<String, String> form = parseForm(exchange);
+            LocalAdminControlService.CommandResult result = LocalAdminControlService.teleportPlayer(
+                    form.get("playerName"),
+                    form.get("mapId"),
+                    form.get("x"),
+                    form.get("y")
+            );
+            writeCommandResponse(exchange, result);
+        }
+    }
+
+    private static final class SocialRegressionHandler extends BaseHandler {
+        @Override
+        protected void handleAuthorized(HttpExchange exchange) throws Exception {
+            requireMethod(exchange, "POST");
+            Map<String, String> form = parseForm(exchange);
+            writeCommandResponse(
+                    exchange,
+                    LocalAdminControlService.runSocialRegression(
+                            form.get("firstPlayer"),
+                            form.get("secondPlayer")
+                    )
+            );
+        }
+    }
+
+    private static final class QuestRegressionHandler extends BaseHandler {
+        @Override
+        protected void handleAuthorized(HttpExchange exchange) throws Exception {
+            requireMethod(exchange, "POST");
+            Map<String, String> form = parseForm(exchange);
+            writeCommandResponse(
+                    exchange,
+                    LocalAdminControlService.startFirstQuestRegression(form.get("playerName"))
+            );
+        }
+    }
+
+    private static final class LootRegressionHandler extends BaseHandler {
+        @Override
+        protected void handleAuthorized(HttpExchange exchange) throws Exception {
+            requireMethod(exchange, "POST");
+            Map<String, String> form = parseForm(exchange);
+            writeCommandResponse(
+                    exchange,
+                    LocalAdminControlService.runLootRegression(form.get("playerName"))
+            );
         }
     }
 

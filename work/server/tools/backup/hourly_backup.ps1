@@ -111,13 +111,21 @@ function Resolve-BackupRoot {
 
 function Resolve-MysqlDump {
     $candidates = @(
+        (Get-ChildItem `
+            -LiteralPath (Join-Path $PSScriptRoot "..\..\..\..\.toolchains\mariadb") `
+            -Recurse `
+            -Filter "mysqldump.exe" `
+            -File `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 1 |
+            ForEach-Object { $_.FullName }),
         "C:\mysql\bin\mysqldump.exe",
         "C:\xampp\mysql\bin\mysqldump.exe",
         "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe",
         "C:\Program Files\MariaDB 10.4\bin\mysqldump.exe"
     )
     foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath $candidate) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
             return $candidate
         }
     }
@@ -209,32 +217,42 @@ function Invoke-MySqlDump {
         [string]$LogFile
     )
 
-    $arguments = New-Object System.Collections.Generic.List[string]
-    $arguments.Add("--host=$($Target.Host)") | Out-Null
-    $arguments.Add("--port=$($Target.Port)") | Out-Null
-    $arguments.Add("--user=$($Target.User)") | Out-Null
-    if (![string]::IsNullOrEmpty($Target.Password)) {
-        $arguments.Add("--password=$($Target.Password)") | Out-Null
-    }
-    $arguments.Add("--single-transaction") | Out-Null
-    $arguments.Add("--skip-lock-tables") | Out-Null
-    $arguments.Add("--routines") | Out-Null
-    $arguments.Add("--events") | Out-Null
-    $arguments.Add("--triggers") | Out-Null
-    $arguments.Add("--default-character-set=utf8mb4") | Out-Null
-    $arguments.Add("--databases") | Out-Null
-    $arguments.Add($Target.Database) | Out-Null
+    $defaultsFile = [IO.Path]::GetTempFileName()
+    try {
+        $defaults = @(
+            "[client]",
+            ("host=" + $Target.Host),
+            ("port=" + $Target.Port),
+            ("user=" + $Target.User),
+            ("password=" + $Target.Password)
+        )
+        [IO.File]::WriteAllLines($defaultsFile, $defaults, [Text.UTF8Encoding]::new($false))
 
-    Write-Log ("Dump DB {0} ({1})" -f $Target.Database, $Target.Source) $LogFile
-    $process = Start-Process -FilePath $MysqlDumpExe -ArgumentList $arguments -NoNewWindow -PassThru -Wait -RedirectStandardOutput $OutputFile -RedirectStandardError ($OutputFile + ".err")
-    if ($process.ExitCode -ne 0) {
-        $stderr = ""
-        if (Test-Path -LiteralPath ($OutputFile + ".err")) {
-            $stderr = [IO.File]::ReadAllText($OutputFile + ".err")
+        $arguments = New-Object System.Collections.Generic.List[string]
+        $arguments.Add("--defaults-extra-file=$defaultsFile") | Out-Null
+        $arguments.Add("--single-transaction") | Out-Null
+        $arguments.Add("--skip-lock-tables") | Out-Null
+        $arguments.Add("--routines") | Out-Null
+        $arguments.Add("--events") | Out-Null
+        $arguments.Add("--triggers") | Out-Null
+        $arguments.Add("--default-character-set=utf8mb4") | Out-Null
+        $arguments.Add("--databases") | Out-Null
+        $arguments.Add($Target.Database) | Out-Null
+
+        Write-Log ("Dump DB {0} ({1})" -f $Target.Database, $Target.Source) $LogFile
+        $process = Start-Process -FilePath $MysqlDumpExe -ArgumentList $arguments -NoNewWindow -PassThru -Wait -RedirectStandardOutput $OutputFile -RedirectStandardError ($OutputFile + ".err")
+        if ($process.ExitCode -ne 0) {
+            $stderr = ""
+            if (Test-Path -LiteralPath ($OutputFile + ".err")) {
+                $stderr = [IO.File]::ReadAllText($OutputFile + ".err")
+            }
+            throw ("mysqldump that bai cho DB {0}. {1}" -f $Target.Database, $stderr.Trim())
         }
-        throw ("mysqldump that bai cho DB {0}. {1}" -f $Target.Database, $stderr.Trim())
+        Remove-Item -LiteralPath ($OutputFile + ".err") -Force -ErrorAction SilentlyContinue
     }
-    Remove-Item -LiteralPath ($OutputFile + ".err") -Force -ErrorAction SilentlyContinue
+    finally {
+        Remove-Item -LiteralPath $defaultsFile -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Copy-IfExists {

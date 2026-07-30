@@ -393,9 +393,10 @@ public final class KpahAutologinLauncher {
         try {
             String machineUserHome = System.getProperty("user.home");
             Path appDir = getAppDir();
-            if (launchOptions.skipUi) {
+            if (launchOptions.skipUi && !launchOptions.localRegression) {
                 KpahLicenseSupport.ensureStoredLicense(appDir);
-            } else if (KpahLicenseSupport.ensureInteractiveLicense(appDir, APP_NAME, null) == null) {
+            } else if (!launchOptions.skipUi
+                    && KpahLicenseSupport.ensureInteractiveLicense(appDir, APP_NAME, null) == null) {
                 return;
             }
             Path clientJar = launchOptions.clientJar != null ? launchOptions.clientJar : findClientJar(appDir);
@@ -407,6 +408,13 @@ public final class KpahAutologinLauncher {
             }
             prepareParentDirectory(configPath);
             AutoConfig config = AutoConfig.load(configPath);
+            if (launchOptions.localRegression
+                    && !("127.0.0.1".equals(config.customHost)
+                    || "localhost".equalsIgnoreCase(config.customHost))) {
+                throw new IllegalStateException(
+                        "--local-regression chi duoc phep ket noi may chu loopback."
+                );
+            }
             if (applySharedServerDefaults(config, configPath, appDir)) {
                 config.store(configPath);
             }
@@ -449,7 +457,15 @@ public final class KpahAutologinLauncher {
             emulatorThread.start();
 
             Thread controllerThread = new Thread(
-                new AutoController(appLoader, config, configPath, statusPath, commandPath, appDir),
+                new AutoController(
+                    appLoader,
+                    config,
+                    configPath,
+                    statusPath,
+                    commandPath,
+                    appDir,
+                    launchOptions.localRegression
+                ),
                 "kpah-auto-controller"
             );
             controllerThread.setDaemon(true);
@@ -2787,6 +2803,7 @@ public final class KpahAutologinLauncher {
         private final Path statusFile;
         private final Path commandFile;
         private final Path appDir;
+        private final boolean localRegression;
         private final Path inventoryCachePath;
         private ReflectionContext ctx;
         private boolean wasInGame;
@@ -2836,7 +2853,8 @@ public final class KpahAutologinLauncher {
             Path configPath,
             Path statusFile,
             Path commandFile,
-            Path appDir
+            Path appDir,
+            boolean localRegression
         ) {
             this.freej2meLoader = freej2meLoader;
             this.config = config;
@@ -2844,6 +2862,7 @@ public final class KpahAutologinLauncher {
             this.statusFile = statusFile;
             this.commandFile = commandFile;
             this.appDir = appDir;
+            this.localRegression = localRegression;
             this.inventoryCachePath = configPath == null || configPath.getParent() == null ? null : configPath.getParent().resolve(INVENTORY_CACHE_FILE);
         }
 
@@ -2873,6 +2892,9 @@ public final class KpahAutologinLauncher {
         }
 
         private void enforceLicenseHeartbeat() {
+            if (localRegression) {
+                return;
+            }
             long now = System.currentTimeMillis();
             if (now < nextLicenseCheckAt) {
                 return;
@@ -3030,7 +3052,10 @@ public final class KpahAutologinLauncher {
                 return;
             }
 
-            if (connected) {
+            if (connected
+                    && !same(currentScreen, loginScreen)
+                    && !same(currentScreen, serverScreen)
+                    && !same(currentScreen, charScreen)) {
                 resetEscortState();
                 resetNoDamageWatchdog();
                 loginAttempts = 0;
@@ -3059,7 +3084,7 @@ public final class KpahAutologinLauncher {
                 return;
             }
 
-            if (!stableConnected && same(currentScreen, serverScreen)) {
+            if (same(currentScreen, serverScreen)) {
                 resetEscortState();
                 resetNoDamageWatchdog();
                 long loginAttemptWindowMs = Math.max(config.reconnectDelayMs, 8000L);
@@ -3093,7 +3118,7 @@ public final class KpahAutologinLauncher {
                 return;
             }
 
-            if (!stableConnected && same(currentScreen, loginScreen)) {
+            if (same(currentScreen, loginScreen)) {
                 resetEscortState();
                 resetNoDamageWatchdog();
                 long loginAttemptWindowMs = Math.max(config.reconnectDelayMs, 8000L);
@@ -3677,6 +3702,14 @@ public final class KpahAutologinLauncher {
             properties.setProperty("pid", Long.toString(ProcessHandle.current().pid()));
             properties.setProperty("updated_at", Long.toString(now));
             properties.setProperty("note", safeNote);
+            if (ctx != null && inGame) {
+                try {
+                    properties.setProperty("map_id", Integer.toString(ctx.currentMapId()));
+                    properties.setProperty("level", Integer.toString(ctx.mainCharLevel()));
+                    properties.setProperty("party_id", Integer.toString(ctx.mainCharPartyId()));
+                } catch (Exception ignored) {
+                }
+            }
             try {
                 writePropertiesAtomically(statusFile, properties, "KPAH auto status");
             } catch (IOException ignored) {
@@ -4576,6 +4609,18 @@ public final class KpahAutologinLauncher {
                 return 0;
             }
             return ((Number)charLevelField.get(mainChar)).intValue();
+        }
+
+        private int mainCharPartyId() throws Exception {
+            Object game = gameScreen.get(null);
+            if (game == null) {
+                return -1;
+            }
+            Object mainChar = mainCharField.get(game);
+            if (mainChar == null) {
+                return -1;
+            }
+            return actorPartyIdField.getShort(mainChar);
         }
 
         private boolean isAutoFightEnabled() throws Exception {
@@ -6008,6 +6053,7 @@ public final class KpahAutologinLauncher {
 
     private static final class LaunchOptions {
         private boolean skipUi;
+        private boolean localRegression;
         private boolean configureOnly;
         private boolean reloadAfterSave;
         private ConfigMode configMode = ConfigMode.ALL;
@@ -6030,6 +6076,8 @@ public final class KpahAutologinLauncher {
                 String arg = args[i];
                 if ("--no-ui".equalsIgnoreCase(arg)) {
                     options.skipUi = true;
+                } else if ("--local-regression".equalsIgnoreCase(arg)) {
+                    options.localRegression = true;
                 } else if ("--configure-only".equalsIgnoreCase(arg)) {
                     options.configureOnly = true;
                 } else if ("--reload-after-save".equalsIgnoreCase(arg)) {

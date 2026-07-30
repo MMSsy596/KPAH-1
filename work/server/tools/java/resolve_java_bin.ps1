@@ -167,7 +167,11 @@ $configKey = switch ($Role) {
 $candidates = New-Object 'System.Collections.Generic.List[object]'
 
 if ($config.ContainsKey($configKey)) {
-    Add-Candidate -List $candidates -HomePath $config[$configKey] -Label $configKey -SourceRank 0 -RequiredFiles $requiredFiles -AllowX86Path $AllowX86.IsPresent
+    $configuredHome = $config[$configKey]
+    if (-not [System.IO.Path]::IsPathRooted($configuredHome)) {
+        $configuredHome = Join-Path $repoRoot $configuredHome
+    }
+    Add-Candidate -List $candidates -HomePath $configuredHome -Label $configKey -SourceRank 0 -RequiredFiles $requiredFiles -AllowX86Path $AllowX86.IsPresent
 }
 
 if ($env:JAVA_HOME) {

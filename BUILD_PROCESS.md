@@ -386,10 +386,10 @@ source-built loopback-only `data.Net`.
 
 PC client path:
 
-- [ ] Change the constants in `tools/pc_client_auth/PatchPcServerBinding.cs` to `127.0.0.1:19129`.
-- [ ] Remove dependence on the external server-list URL or provide a local `NQSH2.txt`.
-- [ ] Build and apply the Mono.Cecil patcher to `Assembly-CSharp.dll`.
-- [ ] Keep client integrity authentication disabled for the first test.
+- [x] Change the constants in `tools/pc_client_auth/PatchPcServerBinding.cs` to `127.0.0.1:19129`.
+- [x] Remove dependence on the external server-list URL or provide a local `NQSH2.txt`.
+- [x] Build and apply the Mono.Cecil patcher to `Assembly-CSharp.dll`.
+- [x] Keep client integrity authentication disabled for the first test.
 
 J2ME client path:
 
@@ -428,9 +428,9 @@ J2ME checkpoint:
 - [x] Load the first map.
 - [x] Validate movement and map transitions.
 - [x] Spawn and attack monsters.
-- [ ] Receive experience and loot.
-- [ ] Save inventory, position and character state.
-- [ ] Restart all services and verify persistence.
+- [x] Receive experience and loot.
+- [x] Save inventory, quest and character state.
+- [x] Restart all services and verify persistence.
 
 Record every failed message command, SQL statement and missing resource before modifying code.
 
@@ -492,7 +492,6 @@ After each completed task:
 
 ## Next action
 
-Reconnect the localhost FreeJ2ME client, kill one level-1 monster and verify
-that the solo EXP null guard produces live EXP and persists it after graceful
-logout. Then verify loot pickup before continuing the first quest and equipment
-regressions.
+Let the six-hour soak run finish and verify `PASS: True`, then apply the
+Win10 firewall hardening from an elevated PowerShell. Current evidence and the
+remaining commands are recorded in `TEN_PART_READINESS.md`.

@@ -6529,16 +6529,18 @@ public class Database {
 
     public int checkLoginIndo(String name, String pass) {
         Connection conn = null;
-        Statement pre = null;
+        PreparedStatement pre = null;
         ResultSet rs = null;
         try {
-            System.out.print(pass);
             conn = this.getConnection();
-            pre = conn.createStatement();
-            String query = "select * from account.team_user where username='" + name + "' and password=password('" + pass + "')";
-            rs = pre.executeQuery(query);
+            pre = conn.prepareStatement(
+                    "SELECT id, ban FROM account.team_user "
+                            + "WHERE username=? AND password=PASSWORD(?)"
+            );
+            pre.setString(1, name);
+            pre.setString(2, pass);
+            rs = pre.executeQuery();
             if (rs.next()) {
-                System.out.print(rs.getInt("id"));
                 int ban = rs.getInt("ban");
                 if (ban == 1) {
                     return -2;
@@ -6548,24 +6550,27 @@ public class Database {
                 }
                 return rs.getInt("id");
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             try {
-                pre.close();
+                if (rs != null) {
+                    rs.close();
+                }
             } catch (Exception ignored) {
             }
             try {
-                Database.connPool.free(conn);
+                if (pre != null) {
+                    pre.close();
+                }
             } catch (Exception ignored) {
             }
-        }
-        try {
-            pre.close();
-        } catch (Exception ignored) {
-        }
-        try {
-            Database.connPool.free(conn);
-        } catch (Exception ignored) {
+            try {
+                if (conn != null) {
+                    Database.connPool.free(conn);
+                }
+            } catch (Exception ignored) {
+            }
         }
         return -1;
     }

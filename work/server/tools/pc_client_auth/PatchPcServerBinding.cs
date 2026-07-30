@@ -6,17 +6,18 @@ using Mono.Cecil.Cil;
 
 public static class PatchPcServerBinding
 {
-    private const string ForcedServerName = "grinding";
-    private const string ForcedHost = "163.61.183.129";
-    private const short ForcedPort = 19129;
-    private const sbyte ForcedIndex = 0;
-    private const string ForcedServerListUrl = "http://163.61.183.129/NQSH2.txt";
+    private const string LegacyHost = "163.61.183.129";
+    private static string forcedServerName = "KPAH";
+    private static string forcedHost = "127.0.0.1";
+    private static short forcedPort = 19129;
+    private static sbyte forcedIndex = 0;
+    private static string forcedServerListUrl = "http://127.0.0.1:18080/NQSH2.txt";
 
     public static int Main(string[] args)
     {
         if (args.Length < 1)
         {
-            Console.Error.WriteLine("Usage: PatchPcServerBinding <assembly-csharp.dll>");
+            Console.Error.WriteLine("Usage: PatchPcServerBinding <assembly-csharp.dll> [host] [port] [server-name] [server-list-url]");
             return 1;
         }
 
@@ -27,11 +28,29 @@ public static class PatchPcServerBinding
             return 2;
         }
 
+        if (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
+        {
+            forcedHost = args[1].Trim();
+        }
+        if (args.Length >= 3 && !short.TryParse(args[2], out forcedPort))
+        {
+            Console.Error.WriteLine("Port khong hop le: " + args[2]);
+            return 3;
+        }
+        if (args.Length >= 4 && !string.IsNullOrWhiteSpace(args[3]))
+        {
+            forcedServerName = args[3].Trim();
+        }
+        if (args.Length >= 5 && !string.IsNullOrWhiteSpace(args[4]))
+        {
+            forcedServerListUrl = args[4].Trim();
+        }
+
         PatchAssembly(assemblyPath);
-        Console.WriteLine("SERVER_NAME=" + ForcedServerName);
-        Console.WriteLine("SERVER_HOST=" + ForcedHost);
-        Console.WriteLine("SERVER_PORT=" + ForcedPort);
-        Console.WriteLine("SERVER_LIST_URL=" + ForcedServerListUrl);
+        Console.WriteLine("SERVER_NAME=" + forcedServerName);
+        Console.WriteLine("SERVER_HOST=" + forcedHost);
+        Console.WriteLine("SERVER_PORT=" + forcedPort);
+        Console.WriteLine("SERVER_LIST_URL=" + forcedServerListUrl);
         return 0;
     }
 
@@ -46,6 +65,7 @@ public static class PatchPcServerBinding
         };
         ModuleDefinition module = ModuleDefinition.ReadModule(assemblyPath, readerParameters);
 
+        PatchLegacyNetworkLiterals(module);
         PatchServerListScr(module);
         PatchSessionConnect(module);
 
@@ -55,6 +75,42 @@ public static class PatchPcServerBinding
 
         File.Copy(tempPath, assemblyPath, true);
         File.Delete(tempPath);
+    }
+
+    private static void PatchLegacyNetworkLiterals(ModuleDefinition module)
+    {
+        foreach (TypeDefinition type in GetAllTypes(module.Types))
+        {
+            foreach (MethodDefinition method in type.Methods)
+            {
+                if (!method.HasBody)
+                {
+                    continue;
+                }
+                foreach (Instruction instruction in method.Body.Instructions)
+                {
+                    string value = instruction.Operand as string;
+                    if (value == null || value.IndexOf(LegacyHost, StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+                    instruction.Operand = value.Replace(LegacyHost, forcedHost);
+                }
+            }
+        }
+    }
+
+    private static System.Collections.Generic.IEnumerable<TypeDefinition> GetAllTypes(
+        System.Collections.Generic.IEnumerable<TypeDefinition> roots)
+    {
+        foreach (TypeDefinition type in roots)
+        {
+            yield return type;
+            foreach (TypeDefinition nested in GetAllTypes(type.NestedTypes))
+            {
+                yield return nested;
+            }
+        }
     }
 
     private static DefaultAssemblyResolver CreateResolver(string baseDirectory)
@@ -156,11 +212,11 @@ public static class PatchPcServerBinding
 
         ILProcessor il = body.GetILProcessor();
 
-        AppendSingleStringArrayAssignment(il, nameServerField, ForcedServerName);
-        AppendSingleStringArrayAssignment(il, addressField, ForcedHost);
-        AppendSingleShortArrayAssignment(il, portField, ForcedPort);
-        AppendSingleSByteArrayAssignment(il, indexServerField, ForcedIndex);
-        il.Append(il.Create(OpCodes.Ldstr, ForcedServerListUrl));
+        AppendSingleStringArrayAssignment(il, nameServerField, forcedServerName);
+        AppendSingleStringArrayAssignment(il, addressField, forcedHost);
+        AppendSingleShortArrayAssignment(il, portField, forcedPort);
+        AppendSingleSByteArrayAssignment(il, indexServerField, forcedIndex);
+        il.Append(il.Create(OpCodes.Ldstr, forcedServerListUrl));
         il.Append(il.Create(OpCodes.Stsfld, linkGetHostField));
         il.Append(il.Create(OpCodes.Ret));
     }
@@ -184,14 +240,14 @@ public static class PatchPcServerBinding
         body.InitLocals = false;
 
         ILProcessor il = body.GetILProcessor();
-        il.Append(il.Create(OpCodes.Ldstr, ForcedServerName));
+        il.Append(il.Create(OpCodes.Ldstr, forcedServerName));
         il.Append(il.Create(OpCodes.Stsfld, nameSvAutoField));
-        il.Append(il.Create(OpCodes.Ldstr, ForcedHost));
+        il.Append(il.Create(OpCodes.Ldstr, forcedHost));
         il.Append(il.Create(OpCodes.Stsfld, addressAutoField));
-        il.Append(il.Create(OpCodes.Ldc_I4, ForcedPort));
+        il.Append(il.Create(OpCodes.Ldc_I4, forcedPort));
         il.Append(il.Create(OpCodes.Conv_I2));
         il.Append(il.Create(OpCodes.Stsfld, portAutoField));
-        il.Append(il.Create(OpCodes.Ldstr, ForcedServerName));
+        il.Append(il.Create(OpCodes.Ldstr, forcedServerName));
         il.Append(il.Create(OpCodes.Stsfld, loginNameServerField));
         il.Append(il.Create(OpCodes.Ret));
     }
@@ -205,9 +261,9 @@ public static class PatchPcServerBinding
 
         ILProcessor il = method.Body.GetILProcessor();
         Instruction first = method.Body.Instructions.First();
-        il.InsertBefore(first, il.Create(OpCodes.Ldstr, ForcedHost));
+        il.InsertBefore(first, il.Create(OpCodes.Ldstr, forcedHost));
         il.InsertBefore(first, il.Create(OpCodes.Starg, method.Parameters[0]));
-        il.InsertBefore(first, il.Create(OpCodes.Ldc_I4, ForcedPort));
+        il.InsertBefore(first, il.Create(OpCodes.Ldc_I4, forcedPort));
         il.InsertBefore(first, il.Create(OpCodes.Starg, method.Parameters[1]));
     }
 

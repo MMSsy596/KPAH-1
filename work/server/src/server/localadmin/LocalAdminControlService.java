@@ -1,22 +1,31 @@
 package server.localadmin;
 
 import data.Database;
+import data.GemItem;
 import io.Message;
 import io.SessionManager;
 import real.AdminHandler;
 import real.AmbientBotManager;
+import real.Actor;
 import real.Char;
 import real.CharManager;
 import real.GemTemplate;
+import real.Item;
 import real.LevelDetail;
 import real.LuongSon108Manager;
 import real.MessageCreator;
 import real.Map;
+import real.Monster;
+import real.Potion;
+import real.doTrade;
 import real.cmd.LoginHandler;
 import server.TeamServer;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,6 +36,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -481,6 +492,300 @@ public final class LocalAdminControlService {
             players.add(info);
         }
         return players;
+    }
+
+    public static CommandResult teleportPlayer(
+            String playerName,
+            String mapIdText,
+            String xText,
+            String yText
+    ) {
+        String normalizedName = safeTrim(playerName);
+        if (normalizedName.length() == 0) {
+            return CommandResult.error("Thieu ten nhan vat.");
+        }
+        int mapId = parseIntOrDefault(mapIdText, -1);
+        int x = parseIntOrDefault(xText, 208);
+        int y = parseIntOrDefault(yText, 160);
+        if (mapId < 0 || x < 0 || y < 0) {
+            return CommandResult.error("Map, x hoac y khong hop le.");
+        }
+        Char player = findOnlineCharByName(normalizedName);
+        if (player == null || player.map == null) {
+            return CommandResult.error("Nhan vat khong online: " + normalizedName);
+        }
+        try {
+            player.map.move2Map(player, x, y, mapId, player.inCountry);
+            String message = "Da dich chuyen " + player.charname + " toi map " + mapId
+                    + " (" + x + "," + y + ").";
+            lastAction = message;
+            return CommandResult.ok(message);
+        } catch (Exception e) {
+            return CommandResult.error("Dich chuyen that bai: " + e.getMessage());
+        }
+    }
+
+    public static CommandResult runSocialRegression(String firstPlayer, String secondPlayer) {
+        Char first = findOnlineCharByName(safeTrim(firstPlayer));
+        Char second = findOnlineCharByName(safeTrim(secondPlayer));
+        if (first == null || second == null) {
+            return CommandResult.error("Hai nhan vat phai cung online.");
+        }
+        if (first == second || first.map == null || first.map != second.map || first.region != second.region) {
+            return CommandResult.error("Hai nhan vat phai o cung map va cung khu.");
+        }
+
+        boolean partyPassed = false;
+        boolean tradePassed = false;
+        boolean pvpPassed = false;
+        int originalFirstPk = first.pk;
+        int originalSecondPk = second.pk;
+        int originalFirstCountry = first.myCountry;
+        int originalSecondCountry = second.myCountry;
+        int originalFirstInCountry = first.inCountry;
+        int originalSecondInCountry = second.inCountry;
+        boolean originalFirstKiller = first.isKiller;
+        boolean originalSecondKiller = second.isKiller;
+        int originalSecondHp = second.hp;
+        try {
+            if (first.partyID == -1) {
+                first.createParty();
+            }
+            first.sendInviteParty2User(incomingMessage(49, new MessagePayloadWriter() {
+                @Override
+                public void write(DataOutputStream output) throws Exception {
+                    output.writeShort(second.id);
+                }
+            }));
+            second.okJoinParty(incomingMessage(49, new MessagePayloadWriter() {
+                @Override
+                public void write(DataOutputStream output) throws Exception {
+                    output.writeShort(first.id);
+                }
+            }));
+            partyPassed = first.partyID != -1
+                    && first.partyID == second.partyID
+                    && first.party != null
+                    && first.party.userParty.size() >= 2;
+            if (first.partyID != -1) {
+                first.deleteParty();
+            }
+
+            first.timeInviteTrade = 0L;
+            second.timeInviteTrade = 0L;
+            first.isKiller = false;
+            second.isKiller = false;
+            first.hp = Math.max(1, first.maxhp);
+            second.hp = Math.max(1, second.maxhp);
+            first.userTrade.removeAllElements();
+            second.userTrade.removeAllElements();
+            first.finishTrade = false;
+            second.finishTrade = false;
+            first.lockTrade = false;
+            second.lockTrade = false;
+            first.pk = 0;
+            second.pk = 0;
+            first.rcvInviteVip = true;
+            second.rcvInviteVip = true;
+            if (!first.nearChars.contains(second.id)) {
+                first.nearChars.add(second.id);
+            }
+            if (!second.nearChars.contains(first.id)) {
+                second.nearChars.add(first.id);
+            }
+            doTrade.doTrade(first, tradeMessage((byte)0, second.id), 0);
+            doTrade.doTrade(second, tradeMessage((byte)1, first.id), 0);
+            boolean tradeOpened = first.userTrade.size() == 1 && second.userTrade.size() == 1;
+            if (tradeOpened) {
+                doTrade.doTrade(first, tradeMessage((byte)4, (short)0), 0);
+                doTrade.doTrade(second, tradeMessage((byte)4, (short)0), 0);
+                doTrade.doTrade(first, tradeMessage((byte)5, (short)0), 0);
+                doTrade.doTrade(second, tradeMessage((byte)5, (short)0), 0);
+                tradePassed = first.userTrade.isEmpty() && second.userTrade.isEmpty();
+            }
+
+            if (first.map.mapIDLoadMap == 0 || first.map.mapIDLoadMap == 70 || first.map.mapIDLoadMap == 80) {
+                first.map.move2Map(first, 208, 160, Map.idMapDautruong, first.inCountry);
+                second.map.move2Map(second, 208, 160, Map.idMapDautruong, second.inCountry);
+                Thread.sleep(1000L);
+            }
+            first.isKiller = false;
+            second.isKiller = false;
+            first.pk = 14;
+            second.pk = 15;
+            first.myCountry = 0;
+            second.myCountry = 1;
+            first.inCountry = 0;
+            second.inCountry = 0;
+            first.hp = Math.max(1, first.maxhp);
+            second.hp = Math.max(1, second.maxhp);
+            originalSecondHp = second.hp;
+            byte pvpSkill = 0;
+            for (byte skillIndex = 0; skillIndex < first.skill.length; skillIndex++) {
+                if (first.skill[skillIndex] + first.addMoreLevelSkill[skillIndex] > 0) {
+                    pvpSkill = skillIndex;
+                    break;
+                }
+            }
+            first.timeLastUseSkills[pvpSkill] = 0L;
+            Method attack = Map.class.getDeclaredMethod("doAttackPlayer", Char.class, Message.class);
+            attack.setAccessible(true);
+            for (int attempt = 0; attempt < 8 && second.hp >= originalSecondHp; attempt++) {
+                first.timeLastUseSkills[pvpSkill] = 0L;
+                attack.invoke(first.map, first, pvpAttackMessage(second.id, pvpSkill));
+                Thread.sleep(350L);
+            }
+            pvpPassed = second.hp < originalSecondHp;
+        } catch (Exception e) {
+            return CommandResult.error(
+                    "Social regression loi: " + e.getClass().getSimpleName() + ": " + e.getMessage()
+            );
+        } finally {
+            first.pk = (byte)originalFirstPk;
+            second.pk = (byte)originalSecondPk;
+            first.myCountry = (byte)originalFirstCountry;
+            second.myCountry = (byte)originalSecondCountry;
+            first.inCountry = (byte)originalFirstInCountry;
+            second.inCountry = (byte)originalSecondInCountry;
+            first.isKiller = originalFirstKiller;
+            second.isKiller = originalSecondKiller;
+            if (second.hp > 0) {
+                second.hp = Math.max(second.hp, originalSecondHp);
+            }
+            first.userTrade.removeAllElements();
+            second.userTrade.removeAllElements();
+        }
+
+        String message = "party=" + partyPassed + ",trade=" + tradePassed + ",pvp=" + pvpPassed;
+        lastAction = "Social regression " + message;
+        return partyPassed && tradePassed && pvpPassed
+                ? CommandResult.ok(message)
+                : CommandResult.error(message);
+    }
+
+    public static CommandResult startFirstQuestRegression(String playerName) {
+        Char player = findOnlineCharByName(safeTrim(playerName));
+        if (player == null) {
+            return CommandResult.error("Nhan vat phai online.");
+        }
+        try {
+            if (!player.getAllQuestWorking().isEmpty()) {
+                return CommandResult.ok("first_quest_already_working");
+            }
+            if (player.getAllQuestCanReceive().isEmpty()) {
+                return CommandResult.error("Khong co nhiem vu dau tien co the nhan.");
+            }
+            player.OnQuest((byte)0, (short)0, (byte)0);
+            if (player.getAllQuestWorking().isEmpty() && player.getAllQuestFinish().isEmpty()) {
+                return CommandResult.error("Nhiem vu dau tien khong chuyen sang working/finish.");
+            }
+            Database.instance.saveCharAuto(player);
+            lastAction = "Quest regression started for " + player.charname;
+            return CommandResult.ok("first_quest_started");
+        } catch (Exception e) {
+            return CommandResult.error("Quest regression loi: " + e.getMessage());
+        }
+    }
+
+    public static CommandResult runLootRegression(String playerName) {
+        Char player = findOnlineCharByName(safeTrim(playerName));
+        if (player == null || player.map == null) {
+            return CommandResult.error("Nhan vat phai online trong map quai.");
+        }
+        try {
+            Hashtable<Short, Monster> monsters = player.map.getAllMons(player.inCountry, player.region);
+            if (monsters == null || monsters.isEmpty()) {
+                return CommandResult.error("Map hien tai khong co quai.");
+            }
+            Monster source = null;
+            for (Monster monster : monsters.values()) {
+                if (monster != null && Math.abs(monster.level - player.lvDetail.lv) <= 5) {
+                    source = monster;
+                    break;
+                }
+            }
+            if (source == null) {
+                return CommandResult.error("Khong co quai cung khoang cap de test drop.");
+            }
+
+            int inventoryBefore = player.iItems.size();
+            int potionBefore = totalPotions(player);
+            int spawned = 0;
+            int picked = 0;
+            for (int attempt = 0; attempt < 30 && picked == 0; attempt++) {
+                Vector<Actor> drops = source.onDropItem(player.map, player);
+                spawned += drops.size();
+                for (Actor actor : drops) {
+                    if (actor instanceof Item) {
+                        player.map.doGetItem(player, actor.id);
+                        picked++;
+                    } else if (actor instanceof Potion) {
+                        player.map.doGetPotion(player, actor.id);
+                        picked++;
+                    } else if (actor instanceof GemItem) {
+                        GemItem gem = (GemItem)actor;
+                        player.map.doGetGemItem(player, gem.cat, gem.id);
+                        picked++;
+                    }
+                }
+            }
+            Database.instance.saveCharAuto(player);
+            int inventoryAfter = player.iItems.size();
+            int potionAfter = totalPotions(player);
+            boolean passed = spawned > 0
+                    && picked > 0
+                    && (inventoryAfter > inventoryBefore || potionAfter > potionBefore);
+            String message = "spawned=" + spawned
+                    + ",picked=" + picked
+                    + ",inventory_delta=" + (inventoryAfter - inventoryBefore)
+                    + ",potion_delta=" + (potionAfter - potionBefore);
+            lastAction = "Loot regression " + message;
+            return passed ? CommandResult.ok(message) : CommandResult.error(message);
+        } catch (Exception e) {
+            return CommandResult.error("Loot regression loi: " + e.getMessage());
+        }
+    }
+
+    private static int totalPotions(Char player) {
+        int total = 0;
+        for (int quantity : player.potions) {
+            total += Math.max(0, quantity);
+        }
+        return total;
+    }
+
+    private interface MessagePayloadWriter {
+        void write(DataOutputStream output) throws Exception;
+    }
+
+    private static Message incomingMessage(int command, MessagePayloadWriter writer) throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream output = new DataOutputStream(bytes);
+        writer.write(output);
+        output.flush();
+        return new Message(command, bytes.toByteArray());
+    }
+
+    private static Message tradeMessage(final byte action, final short playerId) throws Exception {
+        return incomingMessage(66, new MessagePayloadWriter() {
+            @Override
+            public void write(DataOutputStream output) throws Exception {
+                output.writeByte(action);
+                if (action == 0 || action == 1) {
+                    output.writeShort(playerId);
+                }
+            }
+        });
+    }
+
+    private static Message pvpAttackMessage(final short playerId, final byte skillId) throws Exception {
+        return incomingMessage(6, new MessagePayloadWriter() {
+            @Override
+            public void write(DataOutputStream output) throws Exception {
+                output.writeShort(playerId);
+                output.writeByte(skillId);
+            }
+        });
     }
 
     public static List<EventSetting> listEventSettings() {
@@ -1662,6 +1967,17 @@ public final class LocalAdminControlService {
             return Integer.parseInt(raw.trim());
         } catch (Exception ignored) {
             return 0;
+        }
+    }
+
+    private static int parseIntOrDefault(String raw, int defaultValue) {
+        if (raw == null || raw.trim().length() == 0) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (Exception ignored) {
+            return defaultValue;
         }
     }
 

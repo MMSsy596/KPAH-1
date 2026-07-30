@@ -1,11 +1,19 @@
 param(
     [string]$RepoRoot = "",
-    [int[]]$PublicWebPorts = @(8088),
+    [int[]]$PublicWebPorts = @(),
     [int[]]$ExtraPublicPorts = @(),
     [int]$PhpFastCgiPort = 9072
 )
 
 $ErrorActionPreference = "Stop"
+
+function Assert-Administrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw "Can chay PowerShell bang Run as administrator de thay doi Windows Firewall."
+    }
+}
 
 function Resolve-RepoRoot {
     param([string]$InputRoot)
@@ -69,9 +77,11 @@ function Add-KpahFirewallRule {
         -Action $Action `
         -Protocol TCP `
         -LocalPort $Port `
+        -ErrorAction Stop `
         | Out-Null
 }
 
+Assert-Administrator
 $repoRoot = Resolve-RepoRoot -InputRoot $RepoRoot
 $serverIni = Read-KeyValueFile (Join-Path $repoRoot "server.ini")
 $loginIni = Read-KeyValueFile (Join-Path $repoRoot "loginServer\server.ini")
@@ -88,7 +98,7 @@ foreach ($port in ($PublicWebPorts + $ExtraPublicPorts)) {
 }
 
 $privatePorts = New-Object System.Collections.Generic.List[int]
-foreach ($port in @($loginPort, $localAdminPort, $PhpFastCgiPort, 3306)) {
+foreach ($port in @($loginPort, $localAdminPort, 18080, $PhpFastCgiPort, 3306)) {
     if ($port -gt 0 -and -not $privatePorts.Contains($port) -and -not $publicPorts.Contains($port) -and $port -ne $gamePort) {
         $privatePorts.Add($port)
     }

@@ -10648,6 +10648,17 @@ public class Char extends LiveActor {
                 mm.cleanup();
                 return;
             }
+            if (size == 0) {
+                RealController.intance.idGen.putID(this.partyID, 5, "xoa party rong");
+                this.party = new Party();
+                this.partyID = -1;
+                this.masterIDParty = -1;
+                final Message mm = new Message(50);
+                mm.dos.writeByte(1);
+                this.sendMessage(mm);
+                mm.cleanup();
+                return;
+            }
             if (size > 0) {
                 final Message mm = new Message(50);
                 mm.dos.writeByte(1);

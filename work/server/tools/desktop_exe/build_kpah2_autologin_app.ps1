@@ -8,11 +8,12 @@ $classesDir = Join-Path $workRoot "classes"
 $jarDir = Join-Path $workRoot "jar"
 $inputDir = Join-Path $workRoot "input"
 $freeJ2meStage = Join-Path $workRoot "freej2me-stage"
-$outputDir = Join-Path $projectRoot "build\\desktop_client"
+$outputDir = Join-Path $projectRoot "..\\client-j2me\\dist\\auto-harness"
 $launcherJar = Join-Path $jarDir "kpah-launcher.jar"
 $appName = "KPAH_Auto_Tool"
 $freeJ2meZip = Join-Path $projectRoot "tools\\freej2me\\freej2me-v1.52.zip"
 $freeJ2meExtract = Join-Path $projectRoot "tools\\freej2me\\v1.52"
+$networkFreeJ2meJar = Join-Path $projectRoot "..\\client-j2me\\dist\\freej2me-network.jar"
 $sourceDir = Join-Path $PSScriptRoot "src"
 $sourceFiles = @(
     (Join-Path $sourceDir "KpahAutologinLauncher.java"),
@@ -21,6 +22,7 @@ $sourceFiles = @(
 )
 $configTemplate = Join-Path $PSScriptRoot "kpah-auto.properties"
 $clientCandidates = @(
+    (Join-Path $projectRoot "..\\client-j2me\\dist\\grinding2-local.jar"),
     (Join-Path $projectRoot "dist\\client_jar_locked\\grinding2.jar"),
     (Join-Path $projectRoot "dist\\client_jar_locked\\vanphong18x5.jar"),
     (Join-Path $projectRoot "client chuẩn\\grinding2.jar"),
@@ -31,7 +33,23 @@ $clientCandidates = @(
     (Join-Path $projectRoot "client.jar")
 )
 $clientJar = $clientCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-$jdkBin = "C:\\Program Files\\Java\\jdk-23\\bin"
+$portableJpackage = Get-ChildItem `
+    -LiteralPath (Join-Path $projectRoot "..\\..\\.toolchains\\jdk17") `
+    -Recurse `
+    -Filter "jpackage.exe" `
+    -File `
+    -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+$jdkCandidates = @(
+    $(if ($portableJpackage) { $portableJpackage.DirectoryName }),
+    "C:\\Program Files\\Java\\jdk-23\\bin",
+    "C:\\Program Files\\Java\\jdk-21\\bin",
+    "C:\\Program Files\\Java\\jdk-17\\bin"
+)
+$jdkBin = $jdkCandidates |
+    Where-Object { Test-Path (Join-Path $_ "jpackage.exe") } |
+    Select-Object -First 1
+if (!$jdkBin) { throw "Khong tim thay JDK 17+ co jpackage.exe" }
 $javac = Join-Path $jdkBin "javac.exe"
 $jar = Join-Path $jdkBin "jar.exe"
 $jpackage = Join-Path $jdkBin "jpackage.exe"
@@ -46,7 +64,9 @@ foreach ($sourceFile in $sourceFiles) {
 }
 if (!(Test-Path $configTemplate)) { throw "Khong tim thay file config template" }
 if (!$clientJar) { throw "Khong tim thay client jar trong cac duong dan du kien" }
-if (!(Test-Path $freeJ2meZip)) { throw "Khong tim thay freej2me zip: $freeJ2meZip" }
+if (!(Test-Path $networkFreeJ2meJar) -and !(Test-Path $freeJ2meZip)) {
+    throw "Khong tim thay freej2me network jar hoac archive goc."
+}
 
 New-Item -ItemType Directory -Force $classesDir, $jarDir, $inputDir, $freeJ2meStage, $outputDir | Out-Null
 Get-ChildItem -Path $classesDir -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
@@ -54,7 +74,7 @@ Get-ChildItem -Path $jarDir -Force -ErrorAction SilentlyContinue | Remove-Item -
 Get-ChildItem -Path $inputDir -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 Get-ChildItem -Path $freeJ2meStage -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
-if (!(Test-Path $freeJ2meExtract)) {
+if (!(Test-Path $networkFreeJ2meJar) -and !(Test-Path $freeJ2meExtract)) {
     Expand-Archive -Path $freeJ2meZip -DestinationPath $freeJ2meExtract -Force
 }
 
@@ -63,7 +83,11 @@ New-Item -ItemType Directory -Force $classesDir, $jarDir, $inputDir, $freeJ2meSt
 & $javac -d $classesDir $sourceFiles
 if ($LASTEXITCODE -ne 0) { throw "Compile launcher that bai" }
 
-$freeJ2meJar = Join-Path $freeJ2meExtract "freej2me.jar"
+$freeJ2meJar = if (Test-Path $networkFreeJ2meJar) {
+    $networkFreeJ2meJar
+} else {
+    Join-Path $freeJ2meExtract "freej2me.jar"
+}
 if (!(Test-Path $freeJ2meJar)) { throw "Khong tim thay freej2me.jar trong $freeJ2meExtract" }
 
 Push-Location $freeJ2meStage
