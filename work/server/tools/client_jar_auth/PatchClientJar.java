@@ -29,6 +29,7 @@ public final class PatchClientJar {
 
     private static final String GO_CLASS_ENTRY = "go.class";
     private static final String SERVER_LIST_CLASS_ENTRY = "yv.class";
+    private static final String CANVAS_CLASS_ENTRY = "acv.class";
     private static final String AUTH_CLASS_NAME = "kpahauth";
     private static final String AUTH_CLASS_ENTRY = AUTH_CLASS_NAME + ".class";
     private static final String MENU_ICON_ENTRY = "MrQuyet/mid.png";
@@ -39,7 +40,7 @@ public final class PatchClientJar {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.err.println("Usage: PatchClientJar <input.jar> <output.jar> <clientId> [defaultHost] [serverListUrl] [measurementOverride]");
+            System.err.println("Usage: PatchClientJar <input.jar> <output.jar> <clientId> [defaultHost] [serverListUrl] [measurementOverride] [defaultPort]");
             System.exit(1);
         }
         Path inputJar = Paths.get(args[0]).toAbsolutePath().normalize();
@@ -47,7 +48,10 @@ public final class PatchClientJar {
         String clientId = args[2].trim();
         String defaultHost = args.length >= 4 ? args[3].trim() : "";
         String serverListUrl = args.length >= 5 ? args[4].trim() : "";
-        String measurementOverride = args.length >= 6 ? normalizeHex(args[5]) : "";
+        String measurementOverride = args.length >= 6 && !"-".equals(args[5].trim())
+                ? normalizeHex(args[5])
+                : "";
+        int defaultPort = args.length >= 7 ? Integer.parseInt(args[6]) : 19129;
         if (clientId.isEmpty()) {
             throw new IllegalArgumentException("clientId is empty");
         }
@@ -57,6 +61,9 @@ public final class PatchClientJar {
         if (!measurementOverride.isEmpty() && measurementOverride.length() != 64) {
             throw new IllegalArgumentException("measurementOverride phai la SHA-256 hex 64 ky tu");
         }
+        if (defaultPort < 1 || defaultPort > 65535) {
+            throw new IllegalArgumentException("defaultPort phai nam trong khoang 1-65535");
+        }
         Map<String, EntryData> entries = readJar(inputJar);
         ensureLauncherResources(entries);
         if (!defaultHost.isEmpty()) {
@@ -65,7 +72,14 @@ public final class PatchClientJar {
                 throw new IllegalStateException("Khong tim thay " + SERVER_LIST_CLASS_ENTRY + " trong " + inputJar);
             }
             entries.put(SERVER_LIST_CLASS_ENTRY, serverListEntry.withBytes(
-                    patchServerListClass(serverListEntry.bytes, defaultHost, serverListUrl)
+                    patchServerListClass(serverListEntry.bytes, defaultHost, serverListUrl, defaultPort)
+            ));
+            EntryData canvasEntry = entries.get(CANVAS_CLASS_ENTRY);
+            if (canvasEntry == null) {
+                throw new IllegalStateException("Khong tim thay " + CANVAS_CLASS_ENTRY + " trong " + inputJar);
+            }
+            entries.put(CANVAS_CLASS_ENTRY, canvasEntry.withBytes(
+                    patchCanvasConnectClass(canvasEntry.bytes, defaultPort)
             ));
         }
         EntryData goEntry = entries.get(GO_CLASS_ENTRY);
@@ -87,6 +101,7 @@ public final class PatchClientJar {
         System.out.println("CLIENT_ID=" + clientId);
         if (!defaultHost.isEmpty()) {
             System.out.println("DEFAULT_HOST=" + defaultHost);
+            System.out.println("DEFAULT_PORT=" + defaultPort);
             System.out.println("SERVER_LIST_URL=" + serverListUrl);
         }
         System.out.println("MEASUREMENT=" + measurement);
@@ -248,11 +263,16 @@ public final class PatchClientJar {
         return writer.toByteArray();
     }
 
-    private static byte[] patchServerListClass(byte[] sourceBytes, final String defaultHost, final String serverListUrl) {
+    private static byte[] patchServerListClass(
+            byte[] sourceBytes,
+            final String defaultHost,
+            final String serverListUrl,
+            final int defaultPort) {
         ClassReader reader = new ClassReader(sourceBytes);
         ClassWriter writer = new ClassWriter(reader, 0);
         final boolean[] replacedHost = new boolean[]{false};
         final boolean[] replacedUrl = new boolean[]{false};
+        final boolean[] replacedPort = new boolean[]{false};
         ClassVisitor visitor = new ClassVisitor(Opcodes.ASM8, writer) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
@@ -268,6 +288,18 @@ public final class PatchClientJar {
                     };
                 }
                 return new MethodVisitor(Opcodes.ASM8, delegate) {
+                    @Override
+                    public void visitIntInsn(int opcode, int operand) {
+                        if (isHostInitMethod(methodName)
+                                && opcode == Opcodes.SIPUSH
+                                && operand == 19129) {
+                            replacedPort[0] = true;
+                            super.visitIntInsn(opcode, (short) defaultPort);
+                            return;
+                        }
+                        super.visitIntInsn(opcode, operand);
+                    }
+
                     @Override
                     public void visitLdcInsn(Object value) {
                         if (value instanceof String) {
@@ -294,6 +326,82 @@ public final class PatchClientJar {
         }
         if (!replacedUrl[0]) {
             throw new IllegalStateException("Khong patch duoc server list url trong yv.class");
+        }
+        if (!replacedPort[0]) {
+            throw new IllegalStateException("Khong patch duoc port mac dinh trong yv.class");
+        }
+        return writer.toByteArray();
+    }
+
+    private static byte[] patchCanvasConnectClass(byte[] sourceBytes, final int defaultPort) {
+        ClassReader reader = new ClassReader(sourceBytes);
+        ClassWriter writer = new ClassWriter(reader, 0);
+        final boolean[] replacedPort = new boolean[]{false};
+        ClassVisitor visitor = new ClassVisitor(Opcodes.ASM8, writer) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
+                if (!"b".equals(name) || !"()V".equals(descriptor)) {
+                    return delegate;
+                }
+                return new MethodVisitor(Opcodes.ASM8, delegate) {
+                    private int pendingPortRead;
+
+                    private void flushPendingPortRead() {
+                        if (this.pendingPortRead >= 1) {
+                            super.visitFieldInsn(Opcodes.GETSTATIC, "yv", "d", "[S");
+                        }
+                        if (this.pendingPortRead >= 2) {
+                            super.visitFieldInsn(Opcodes.GETSTATIC, "yv", "a", "I");
+                        }
+                        this.pendingPortRead = 0;
+                    }
+
+                    @Override
+                    public void visitFieldInsn(int opcode, String owner, String fieldName, String fieldDescriptor) {
+                        if (this.pendingPortRead == 0
+                                && opcode == Opcodes.GETSTATIC
+                                && "yv".equals(owner)
+                                && "d".equals(fieldName)
+                                && "[S".equals(fieldDescriptor)) {
+                            this.pendingPortRead = 1;
+                            return;
+                        }
+                        if (this.pendingPortRead == 1
+                                && opcode == Opcodes.GETSTATIC
+                                && "yv".equals(owner)
+                                && "a".equals(fieldName)
+                                && "I".equals(fieldDescriptor)) {
+                            this.pendingPortRead = 2;
+                            return;
+                        }
+                        this.flushPendingPortRead();
+                        super.visitFieldInsn(opcode, owner, fieldName, fieldDescriptor);
+                    }
+
+                    @Override
+                    public void visitInsn(int opcode) {
+                        if (this.pendingPortRead == 2 && opcode == Opcodes.SALOAD) {
+                            this.pendingPortRead = 0;
+                            replacedPort[0] = true;
+                            super.visitLdcInsn(Integer.valueOf(defaultPort));
+                            return;
+                        }
+                        this.flushPendingPortRead();
+                        super.visitInsn(opcode);
+                    }
+
+                    @Override
+                    public void visitEnd() {
+                        this.flushPendingPortRead();
+                        super.visitEnd();
+                    }
+                };
+            }
+        };
+        reader.accept(visitor, 0);
+        if (!replacedPort[0]) {
+            throw new IllegalStateException("Khong patch duoc port ket noi trong acv.class");
         }
         return writer.toByteArray();
     }

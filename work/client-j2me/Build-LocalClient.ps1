@@ -1,5 +1,7 @@
 param(
     [string]$HostName = "127.0.0.1",
+    [ValidateRange(1, 65535)]
+    [int]$Port = 19129,
     [string]$OutputName = "grinding2-local.jar",
     [string]$ClientId = "grinding2-local",
     [ValidateSet("dist", "release")]
@@ -51,7 +53,9 @@ if ($LASTEXITCODE -ne 0) {
     $outputJar `
     $ClientId `
     $HostName `
-    "http://127.0.0.1:18080/NQSH2.txt"
+    "http://127.0.0.1:18080/NQSH2.txt" `
+    "-" `
+    $Port
 if ($LASTEXITCODE -ne 0) {
     throw "Va client J2ME that bai."
 }
@@ -60,5 +64,5 @@ $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $outputJar
 $hashLine = "{0} *{1}" -f $hash.Hash.ToLowerInvariant(), (Split-Path -Leaf $outputJar)
 $hashLine | Set-Content -LiteralPath ($outputJar + ".sha256") -Encoding ASCII
 Write-Host "J2ME client build OK: $outputJar"
-Write-Host "Server: ${HostName}:19129"
+Write-Host "Server: ${HostName}:$Port"
 Write-Host "SHA256: $($hash.Hash)"
