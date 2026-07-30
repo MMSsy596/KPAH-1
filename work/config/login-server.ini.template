@@ -1,0 +1,4 @@
+db.url=jdbc:mysql://localhost:3306/account?useUnicode=true&characterEncoding=UTF-8
+db.user=kpah_local
+db.password=CHANGE_ME_LOCAL_ONLY
+port=8023

@@ -60,6 +60,22 @@ git lfs pull
 
 The project does not depend on files or notes outside this repository. The new PC still needs its own JDK and database runtime.
 
+## Current local checkpoint
+
+MariaDB, the closed login server and the game server are running locally. The
+supported bundled J2ME client `grinding2.jar` has been patched to
+`127.0.0.1:19129`; a loopback-only HTTP server provides `NQSH2.txt` on port
+`18080`. The bundled FreeJ2ME socket implementation was a no-op stub, so the
+local emulator build now supplies a real `SocketConnectionImpl`. A loopback TCP
+session, account authentication and entry to character creation are verified.
+Local registration, fresh-character creation, first-map movement, NPC/shop
+interaction and the first combat loop have since been exercised. A level-1
+character can deal damage, kill a monster, receive counter-damage, die and
+respawn. Solo EXP was blocked by an unguarded `p.party.userParty` access; the
+null guard is implemented and the server rebuild passes. The immediate next
+checkpoint is an end-to-end post-fix kill confirming live EXP, database
+persistence and loot pickup.
+
 ## Collected upstream material
 
 ### Primary runnable baseline
@@ -418,25 +434,26 @@ Normalize obsolete absolute paths such as `D:\server\...` and `C:\Users\Administ
 - [x] Initialized the Git repository.
 - [x] Uploaded the repository and LFS objects to GitHub.
 
-No game binary has been executed and no server build has been attempted yet.
+The baseline has now been built and started locally. MariaDB 10.4.32, the
+closed login server and the rebuilt game server reach a clean startup; see the
+latest `BUILD_PROCESS.md` status and runtime notes for the exact migrations,
+hashes and diagnostics.
 
 ## Next checkpoint
 
-Continue with Phase 1 from `BUILD_PROCESS.md`:
+Continue with Phase 7 from `BUILD_PROCESS.md`:
 
-1. Create `work/server` from `vendor/server-full-huyhoang`.
-2. Preserve `vendor` unchanged.
-3. Create `work/database/migrations`.
-4. Create `work/client-pc`, `work/client-j2me` and `work/config`.
-5. Inventory JDK and MariaDB availability on the active PC.
-6. Generate localhost-only configuration templates.
-7. Disable external source endpoints before running any server or entering credentials.
+1. Restore the current FreeJ2ME localhost session after service restart.
+2. Kill one level-1 monster and verify live EXP through the local admin API.
+3. Gracefully close the client and verify EXP persistence in MariaDB.
+4. Verify loot creation/pickup and the resulting inventory state.
+5. Continue with the first quest, equipment and skill regression.
 
 ## Prompt for a new Codex session
 
 Use this prompt after cloning on another PC:
 
-> Read README.md, SOURCES.md, PROJECT_CONTEXT.md and BUILD_PROCESS.md completely. Continue from the current Next checkpoint. Preserve vendor snapshots unchanged, perform integration under work/, update BUILD_PROCESS.md after every completed checkpoint, and commit/push each reproducible change to main. Do not run bundled server binaries until external network endpoints have been disabled or outbound networking has been blocked.
+> Read README.md, SOURCES.md, PROJECT_CONTEXT.md and BUILD_PROCESS.md completely. Continue from the current Next checkpoint. Preserve vendor snapshots unchanged, perform integration under work/, update BUILD_PROCESS.md after every completed checkpoint, and commit/push each reproducible change to main. Keep all runtime services and clients local-only.
 
 ## Documentation precedence
 

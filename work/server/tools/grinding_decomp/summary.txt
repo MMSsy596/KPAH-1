@@ -1,0 +1,30 @@
+Summary for tools\desktop_exe\tmp\grinding_ascii.jar
+Decompiled with CFR 0.152
+
+
+af
+----------------------------
+
+b()
+  Unable to fully structure code
+
+
+dj
+----------------------------
+
+b()
+  Unable to fully structure code
+
+
+hs
+----------------------------
+
+run()
+  Unable to fully structure code
+
+
+n
+----------------------------
+
+a()
+  Handled impossible loop by duplicating code

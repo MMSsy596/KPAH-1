@@ -1,0 +1,89 @@
+if (!conn.IMEI.equals("")) {// có số imei
+			if (conn.platform == IPHONE
+					&& conn.versionCode > ArmyServer.blockVerisonCodeFrom) {
+				// client đang xét duyệt, dùng random imei
+				String sResult = "2";
+				Random r = new Random(System.currentTimeMillis());
+				String IMEIRandom = "AppStore3"
+						+ String.valueOf(r.nextInt(10000));
+				try {
+					sResult = Net
+							.getHttp("http://27.0.14.75/usersv/registerbyimei.php?uname="
+									+ uname
+									+ "&pass="
+									+ pass
+									+ "&provider=0&region=5&imei=" + IMEIRandom);
+				} catch (Exception e) {
+
+				}
+				// System.out.println("Kết quả " + sResult);
+				if (sResult.equals("0")) {
+					// sendErrorMessage(
+					// "Chúc mừng bạn đã đăng kí thành công. Mời bạn đăng nhập vào game",
+					// conn);
+					sendErrorMessage(lang.getServer_info(152), conn);
+					return;
+				} else if (sResult.equals("1")) {
+					// sendErrorMessage("Có lỗi xảy ra. Mời bạn thử lại", conn);
+					sendErrorMessage(lang.getServer_info(44), conn);
+					return;
+				} else {
+					// sendErrorMessage(
+					// "Bạn chỉ được đăng kí 1 tài khoản trên 1 điện thoại",
+					// conn);
+					sendErrorMessage(lang.getServer_info(153), conn);
+					return;
+				}
+			} else {
+				// client đã xét duyệt ok và úp lên appstore cả những client
+				// java android
+				String sResult = "2";
+				try {
+					sResult = Net
+							.getHttp("http://27.0.14.75/usersv/registerbyimei.php?uname="
+									+ uname
+									+ "&pass="
+									+ pass
+									+ "&provider=0&region=5&imei=" + conn.IMEI);
+				} catch (Exception e) {
+
+				}
+				if (sResult.equals("0")) {
+					// sendErrorMessage(
+					// "Chúc mừng bạn đã đăng kí thành công. Mời bạn đăng nhập vào game",
+					// conn);
+					sendErrorMessage(lang.getServer_info(152), conn);
+					return;
+				} else if (sResult.equals("1")) {
+					// sendErrorMessage("Có lỗi xảy ra. Mời bạn thử lại", conn);
+					sendErrorMessage(lang.getServer_info(44), conn);
+					return;
+				}
+			}
+		}
+
+		m = new Message(MessageCommand.CHECK_USERNAME_PASSWORD);
+		m.dos.writeBoolean(userID == -1);
+		if (userID == -1) {
+			int clientProvider = conn.clientProvider;
+			if (smsReg[clientProvider] == null)
+				makeSmsReg(clientProvider);
+			String noidung = null;
+			if (pass != null) {
+				noidung = smsReg[clientProvider].getSmsSyntax(conn.clientagent,
+						-1) + uname + " " + pass;
+			} else {
+				noidung = smsReg[clientProvider].getSmsSyntax(conn.clientagent,
+						-1) + uname;
+			}
+			m.dos.writeUTF(noidung);
+			// System.out.println("sms reg=" + noidung);
+			m.dos.writeUTF(smsReg[clientProvider].port);
+			conn.sendMessage(m);
+			m.cleanup();
+		} else {
+			m.dos.writeUTF("");// client đọc cái này
+			m.dos.writeUTF("");// client đọc cái này
+			conn.sendMessage(m);
+			m.cleanup();
+		}

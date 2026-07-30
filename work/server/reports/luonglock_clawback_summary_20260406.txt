@@ -1,0 +1,8 @@
+﻿Generated: 2026-04-06 09:16:23
+Candidate report: reports\luonglock_clawback_candidates_20260406.tsv
+Accounts with unexplained LK >= 5000: 69
+Accounts with unexplained LK >= 10000: 67
+Detail report 5000: reports\luonglock_clawback_detail_20260406_t5000.tsv
+Detail report 10000: reports\luonglock_clawback_detail_20260406_t10000.tsv
+SQL script 5000: reports\luonglock_clawback_apply_20260406_t5000.sql
+SQL script 10000: reports\luonglock_clawback_apply_20260406_t10000.sql

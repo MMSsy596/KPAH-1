@@ -1,0 +1,9 @@
+﻿<service>
+  <id>kpah-web-php</id>
+  <name>KPAH Web PHP</name>
+  <description>KPAH PHP FastCGI worker</description>
+  <executable>C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\ops\win10-production\staging\services\kpah-web-php.cmd</executable>
+  <logpath>C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\ops\win10-production\staging\services\logs</logpath>
+  <log mode="roll-by-size"></log>
+  <onfailure action="restart" delay="10 sec" />
+</service>

@@ -1,0 +1,67 @@
+Initialize engine version: 5.1.2f1 (afd2369b692a)
+GfxDevice: creating device client; threaded=1
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.0]
+    Renderer: Microsoft Basic Render Driver (ID=0x8c)
+    Vendor:   Microsoft
+    VRAM:     2047 MB
+Begin MonoManager ReloadAssembly
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.dll (this message is harmless)
+Loading C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.dll into Unity Child Domain
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\Assembly-CSharp.dll (this message is harmless)
+Loading C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.UI.dll (this message is harmless)
+Loading C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
+Loading C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.Analytics.dll (this message is harmless)
+Loading C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\UnityEngine.Analytics.dll into Unity Child Domain
+- Completed reload, in  0.089 seconds
+<RI> Initializing input.
+<RI> Input initialized.
+desktop: 1920x1080 32Hz; virtual: 1920x1080 at 0,0
+<RI> Initialized touch support.
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\System.Core.dll (this message is harmless)
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\System.dll (this message is harmless)
+Init Scale GUI: Screen.w=800 Screen.h=600
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+Platform assembly: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL\client chuẩn\PC\KPAH_276_Data\Managed\ClientAuthPcLib.dll (this message is harmless)
+Unloading 2 Unused Serialized files (Serialized files now loaded: 0)
+init Session_ME
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+False agent >>>>>0
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+False provider >>>>>0
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+False client  >>>>>0
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+
+Unloading 668 unused Assets to reduce memory usage. Loaded Objects now: 1432.
+Total: 2.103700 ms (FindLiveObjects: 0.135500 ms CreateObjectMapping: 0.182200 ms MarkObjects: 0.931600 ms  DeleteObjects: 0.852500 ms)
+
+Connect: 163.61.183.129     19129 name Server  grinding
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+connecting...!
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+host: 163.61.183.129
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+
+port: 19129
+ 
+(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 65)
+

@@ -1,0 +1,7 @@
+2026/04/07 09:19:29
+requested_target=100
+ok=1
+applied_target=100
+current_count=100
+roster_count=7270
+summary=Dang online: 100 | Muc tieu: 100 | Roster: 7270 | Den ca hien tai: 1422 | Dang nghi: 0

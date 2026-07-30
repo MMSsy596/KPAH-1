@@ -1,0 +1,25 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
+package jxl;
+
+import jxl.biff.BaseCellFeatures;
+
+public class CellFeatures
+extends BaseCellFeatures {
+    public CellFeatures() {
+    }
+
+    protected CellFeatures(CellFeatures cf) {
+        super(cf);
+    }
+
+    public String getComment() {
+        return super.getComment();
+    }
+
+    public String getDataValidationList() {
+        return super.getDataValidationList();
+    }
+}
+

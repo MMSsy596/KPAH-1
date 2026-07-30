@@ -1,0 +1,14 @@
+[Unit]
+Description=KPAH Game Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/kpah
+ExecStart=/usr/bin/java -jar /opt/kpah/dist/KPAH2.jar
+Restart=on-failure
+User=kpah
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

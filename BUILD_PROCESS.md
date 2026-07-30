@@ -9,13 +9,13 @@ Last updated: 2026-07-29
 | Phase | Status | Result |
 | --- | --- | --- |
 | 0. Collect and synchronize upstream material | Complete | Five source snapshots and the user-provided client are stored, hashed and pushed to the GitHub `main` branch with Git LFS. |
-| 1. Create reproducible workspace | Not started | Next phase. |
-| 2. Provision Java and MariaDB | Not started | JDK and database tooling are not installed or verified yet. |
-| 3. Build baseline game server | Not started | No repository binary has been executed. |
-| 4. Initialize databases | Not started | SQL snapshots have only been inspected. |
-| 5. Start login and game services | Not started | Ports 8023 and 19129 are not configured or tested. |
-| 6. Patch a client for localhost | Not started | Bundled clients still contain non-local server bindings. |
-| 7. Validate core gameplay loop | Not started | Login, character select, map entry and combat remain to be tested. |
+| 1. Create reproducible workspace | Complete | Baseline copied to `work/server`; database, client and configuration work areas created; closed dependencies hashed. |
+| 2. Provision Java and MariaDB | Complete | Portable Temurin JDK 8.0.492 and MariaDB 10.4.32 are verified. MariaDB runs without a Windows service and binds to `127.0.0.1:3306`. |
+| 3. Prepare databases | Complete | Baseline `account` and `kpah2` dumps imported; local least-privilege user created; three evidence-driven migrations bring `kpah2` to 65 tables. |
+| 4. Localize and build game server | Complete | External application endpoints are locally blocked, configuration secrets are generated in ignored files, and the rebuilt server starts without logged errors. |
+| 5. Start login and game services | Complete | MariaDB, login server, game server and local admin API are running; login/database connection and map/template initialization are confirmed. |
+| 6. Patch a client for localhost | Complete | The supported J2ME client and FreeJ2ME socket transport use localhost and have completed authenticated sessions. |
+| 7. Validate core gameplay loop | In progress | Registration, fresh character, movement, NPC/shop, damage, kill, death and respawn pass. Solo EXP source fix builds; post-fix runtime persistence and loot remain. |
 | 8. Restore optional systems | Not started | Events, admin, gift codes, payment hooks and other optional systems remain disabled. |
 | 9. Produce clean local release | Not started | No release artifact exists yet. |
 
@@ -221,12 +221,12 @@ Use project-relative `logs`, `runtime` and `tools` paths where possible.
 
 ### Phase 1: Create a reproducible workspace
 
-- [ ] Create `work/server` from `vendor/server-full-huyhoang`.
-- [ ] Keep all `vendor` snapshots unchanged.
-- [ ] Create `work/database/migrations`.
-- [ ] Create `work/client-pc` and `work/client-j2me`.
-- [ ] Create local configuration templates with no embedded upstream credentials.
-- [ ] Record hashes of every closed dependency used in the build.
+- [x] Create `work/server` from `vendor/server-full-huyhoang`.
+- [x] Keep all `vendor` snapshots unchanged.
+- [x] Create `work/database/migrations`.
+- [x] Create `work/client-pc` and `work/client-j2me`.
+- [x] Create local configuration templates with no embedded upstream credentials.
+- [x] Record hashes of every closed dependency used in the build.
 
 Checkpoint output:
 
@@ -239,6 +239,10 @@ work/
   client-j2me/
   config/
 ```
+
+Checkpoint completed on 2026-07-29. The copy contained 8,849 files and
+314,528,655 bytes, matching the preserved baseline before local-only edits.
+Dependency hashes are recorded in `work/config/closed-dependencies.sha256`.
 
 ### Phase 2: Provision tools
 
@@ -253,22 +257,36 @@ Preferred compatibility environment:
 
 Tasks:
 
-- [ ] Install or provide a portable JDK 8.
-- [ ] Verify `java`, `javac` and `jar` versions.
-- [ ] Install MariaDB or create a local container/VM database.
-- [ ] Verify that ports 8023, 19129 and 18023 are free.
-- [ ] Do not install services or scheduled tasks during the first build.
+- [x] Install or provide a portable JDK 8.
+- [x] Verify `java`, `javac` and `jar` versions.
+- [x] Install MariaDB or create a local container/VM database.
+- [x] Verify that ports 8023, 19129 and 18023 are free.
+- [x] Do not install services or scheduled tasks during the first build.
+
+Tooling verified on 2026-07-29:
+
+- Eclipse Temurin OpenJDK `1.8.0_492-b09`, portable under the ignored
+  `.toolchains/` directory.
+- `javac 1.8.0_492` and the matching Java 8 `jar` tool.
+- Ports 8023, 19129, 18023 and 3306 had no listeners.
+- The current WinGet catalog offered MariaDB 12.3.2, so it was not installed
+  in place of the preferred 10.4-compatible runtime.
+- MariaDB 10.4.32 was downloaded from the official MariaDB archive as a
+  portable Windows ZIP. SHA-256:
+  `C7239062B1E491C8292ED53F38DA633F0642C9E5B78A08673FDB4919EE7194BC`.
+- The instance uses `runtime-local/mariadb/data`, binds to `127.0.0.1:3306`
+  and is not installed as a Windows service.
 
 ### Phase 3: Prepare databases
 
-- [ ] Create an empty `account` database.
-- [ ] Create an empty `kpah2` database.
-- [ ] Create a least-privilege local database user.
-- [ ] Import `loginServer/account.sql` into `account`.
-- [ ] Import the baseline game dump into `kpah2`.
-- [ ] Decide whether the first test uses a clean account/character set or a preserved snapshot copy.
-- [ ] Compare missing runtime tables with `vendor/server-kdev/DATABASE/kpah1.sql`.
-- [ ] Add supplemental tables through numbered migration files only.
+- [x] Create an empty `account` database.
+- [x] Create an empty `kpah2` database.
+- [x] Create a least-privilege local database user.
+- [x] Import `loginServer/account.sql` into `account`.
+- [x] Import the baseline game dump into `kpah2`.
+- [x] Decide whether the first test uses a clean account/character set or a preserved snapshot copy.
+- [x] Compare missing runtime tables with `vendor/server-kdev/DATABASE/kpah1.sql`.
+- [x] Add supplemental tables through numbered migration files only.
 
 Suggested migration naming:
 
@@ -279,28 +297,90 @@ Suggested migration naming:
 020_add_optional_feature_tables.sql
 ```
 
+Database checkpoint completed on 2026-07-29:
+
+- The first test preserves the supplied snapshot: 1 account row and 1,253
+  character rows.
+- `account` contains 2 tables; `kpah2` contains 65 tables after migrations.
+- `010_add_data_item.sql` adds the first missing template table and 904 rows.
+- `011_add_startup_core_tables.sql` adds only the nine tables reported by the
+  second startup attempt.
+- `012_add_runtime_system_tables.sql` adds `5h_systems` and
+  `tob_log_use_luong`, both reported by the successful runtime.
+- Root and `kpah_local` passwords, admin token and client secret are randomly
+  generated under ignored `local-config/`; an empty root password is rejected.
+
 ### Phase 4: Localize and build the game server
 
-- [ ] Copy the baseline into `work/server`.
-- [ ] Replace all configuration secrets with generated local values.
-- [ ] Normalize absolute paths.
-- [ ] Disable external HTTP/socket code paths.
-- [ ] Confirm the required JAR classpath.
-- [ ] Run `build_server.bat` from the working copy.
-- [ ] Verify that `KPAH.jar` has main class `server.TeamServer`.
-- [ ] Hash the build output.
-- [ ] Start the server with outbound network blocked.
-- [ ] Capture the first startup log and SQL errors.
+- [x] Copy the baseline into `work/server`.
+- [x] Replace all configuration placeholders with generated local values immediately before database startup.
+- [x] Normalize absolute paths.
+- [x] Disable external HTTP/socket code paths.
+- [x] Confirm the required JAR classpath.
+- [x] Run `build_server.bat` from the working copy.
+- [x] Verify that `KPAH.jar` has main class `server.TeamServer`.
+- [x] Hash the build output.
+- [x] Start the server with external application endpoints blocked by local-only networking replacements.
+- [x] Capture the first startup log and SQL errors.
+
+First successful build on 2026-07-29:
+
+```text
+cmd.exe /d /c build_server.bat
+Build OK: KPAH.jar va dist\KPAH2.jar
+SHA-256: 25C21B5C8384C5AB58CF2CDB395497C2A0203735B6F5ADCA9BB7F37260100A06
+```
+
+Both output JARs were 1,785,349 bytes and had identical hashes. The manifest
+declares `server.TeamServer` and the Java 8 dependency classpath. Two source
+uses of Java 15 `String.formatted` were replaced with Java 8-compatible
+`String.format`. A source-built `data.Net` now shadows the legacy networking
+class in `NQSH_5h.jar` and only permits loopback HTTP endpoints. The visible
+raw legacy authentication sockets and external activity queues are disabled.
+No server or bundled login binary was executed during this checkpoint.
+
+First successful runtime checkpoint on 2026-07-29:
+
+- Login server JDBC 5.0.8 initially rejected MariaDB's `utf8mb4` handshake;
+  adding `useUnicode=true&characterEncoding=UTF-8` to the local JDBC URL fixed
+  it.
+- Startup attempts then reported missing `data_item`, nine core/static tables,
+  and two runtime tables. Each failure was preserved in ignored runtime logs
+  and fixed through migrations 010, 011 and 012.
+- Missing `logs/runtime` and `logs/vantieu` directories are now generated by
+  `Initialize-LocalConfiguration.ps1`.
+- Dynamic monthly tables now use `CREATE TABLE IF NOT EXISTS`.
+- Local builds skip the obsolete online-status HTTP call.
+- Clean rebuilt JAR SHA-256:
+  `C88F1861C38AE3266A988A76EBD14A1B643BDA406EA99BCADD6D866D5C4953EF`.
+- A clean restart reached template/map initialization, local admin startup and
+  port 19129 with no exception, SQL error, missing table or missing file in the
+  current logs.
 
 ### Phase 5: Start login and game services
 
-- [ ] Configure `loginServer/server.ini` for local MariaDB.
-- [ ] Start `CheckLoginSocket.jar` on port 8023.
-- [ ] Confirm the socket is listening.
-- [ ] Start the game server on port 19129.
-- [ ] Confirm its connection to the login server.
-- [ ] Confirm map and template initialization.
-- [ ] Do not expose ports through the router or public firewall.
+- [x] Configure `loginServer/server.ini` for local MariaDB.
+- [x] Start `CheckLoginSocket.jar` on port 8023.
+- [x] Confirm the socket is listening.
+- [x] Start the game server on port 19129.
+- [x] Confirm its connection to the login server.
+- [x] Confirm map and template initialization.
+- [x] Do not expose ports through the router or public firewall.
+
+Verified listeners:
+
+```text
+127.0.0.1:3306  MariaDB
+*:8023          closed login server (no router/firewall exposure added)
+*:19129         game server (no router/firewall exposure added)
+127.0.0.1:18023 local admin HTTP API
+```
+
+The login JAR's six application classes were statically inspected before
+execution. They contain only an inbound `ServerSocket` and JDBC access through
+the localhost URL in `server.ini`; no external HTTP or outbound application
+socket was found. The game server's legacy external URLs are routed through the
+source-built loopback-only `data.Net`.
 
 ### Phase 6: Patch a localhost client
 
@@ -313,19 +393,41 @@ PC client path:
 
 J2ME client path:
 
-- [ ] Create a local server list containing `Local:127.0.0.1:19129:0`.
-- [ ] Run the baseline `PatchClientJar.java` against a supported bundled client.
-- [ ] Test through FreeJ2ME.
+- [x] Create a local server list containing `Local:127.0.0.1:19129:0`.
+- [x] Run the baseline `PatchClientJar.java` against a supported bundled client.
+- [x] Test through FreeJ2ME.
 - [ ] Patch `client-original/KPAH.jar` only after the supported client succeeds.
+
+J2ME checkpoint:
+
+- Added portable Temurin JDK 17 under the ignored `.toolchains/jdk17/` tree
+  because the baseline patcher imports the JDK's internal ASM package.
+- Added reproducible `work/client-j2me/Build-LocalClient.ps1` and
+  `work/client-j2me/Start-LocalClient.ps1` helpers.
+- The supported baseline `grinding2.jar` was patched to use
+  `127.0.0.1` and `http://127.0.0.1:18080/NQSH2.txt`.
+- Patched output SHA-256:
+  `2F734B001E47AE5700C0C21342EC7B55E99ED5F6CA08606C8E91858B478376AB`.
+- The bundled FreeJ2ME 1.52 maps `socket://` connections to a stub
+  `HttpConnectionImpl`; its `connect()` method does not create a TCP socket.
+- Added `work/client-j2me/Build-LocalEmulator.ps1` and a small replacement
+  `Connector`/`SocketConnectionImpl`. The resulting
+  `dist/freej2me-network.jar` preserves the bundled emulator UI while providing
+  real `java.net.Socket` transport.
+- Network-enabled emulator SHA-256:
+  `41376D3D6C4653BAF5AB4744C7F04430352A29CDB77BD2CD9DBB841D30A7868C`.
+- Verified an established loopback TCP session from FreeJ2ME to
+  `127.0.0.1:19129`, successful account authentication and transition to the
+  character-creation screen.
 
 ### Phase 7: Validate the core gameplay loop
 
-- [ ] Register or insert a test account.
-- [ ] Log in through the client.
-- [ ] Create/select a character.
-- [ ] Load the first map.
-- [ ] Validate movement and map transitions.
-- [ ] Spawn and attack monsters.
+- [x] Register or insert a test account.
+- [x] Log in through the client.
+- [x] Create/select a character.
+- [x] Load the first map.
+- [x] Validate movement and map transitions.
+- [x] Spawn and attack monsters.
 - [ ] Receive experience and loot.
 - [ ] Save inventory, position and character state.
 - [ ] Restart all services and verify persistence.
@@ -390,4 +492,7 @@ After each completed task:
 
 ## Next action
 
-Create `work/server` as a working copy of the full baseline, inventory the required Java/MariaDB toolchain on the current PC, and generate localhost-only configuration templates. No server or bundled binary should be executed before the external endpoints have been disabled.
+Reconnect the localhost FreeJ2ME client, kill one level-1 monster and verify
+that the solo EXP null guard produces live EXP and persists it after graceful
+logout. Then verify loot pickup before continuing the first quest and equipment
+regressions.

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clan Logo Gallery</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4efe6;
+      --panel: rgba(255, 252, 245, 0.92);
+      --ink: #1d2430;
+      --muted: #667085;
+      --line: rgba(17, 24, 39, 0.12);
+      --accent: #a8431d;
+      --shadow: 0 14px 30px rgba(44, 28, 15, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(214, 147, 87, 0.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(88, 124, 173, 0.12), transparent 28%),
+        linear-gradient(180deg, #fbf6ee 0%, var(--bg) 100%);
+    }
+
+    .page {
+      width: min(1400px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 22px;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 5vw, 54px);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+    }
+
+    .accent {
+      color: var(--accent);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .search-wrap {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input[type="search"] {
+      width: min(420px, 100%);
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      font-size: 16px;
+      background: white;
+      color: var(--ink);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px 10px;
+      box-shadow: 0 8px 18px rgba(19, 25, 34, 0.06);
+      text-align: center;
+      transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(19, 25, 34, 0.12);
+      border-color: rgba(168, 67, 29, 0.25);
+    }
+
+    .logo-box {
+      min-height: 62px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 8px;
+      border-radius: 12px;
+      background:
+        linear-gradient(45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.03) 75%),
+        linear-gradient(45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.03) 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 6px 6px;
+    }
+
+    img {
+      max-width: 48px;
+      max-height: 48px;
+      image-rendering: pixelated;
+    }
+
+    .id {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .file {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 20px, 1400px);
+        padding-top: 18px;
+      }
+
+      .hero {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+        gap: 10px;
+      }
+
+      .card {
+        border-radius: 14px;
+        padding: 10px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>Clan Logo <span class="accent">Gallery</span></h1>
+      <div class="hint">All extracted clan logos from the local project folder.</div>
+      <div class="meta">
+        <div class="pill">Folder: <strong>map/iconclan</strong></div>
+        <div class="pill">Total logos: <strong id="logo-count">1342</strong></div>
+        <div class="pill">Range: <strong>0.png</strong> to <strong>1341.png</strong></div>
+      </div>
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Filter by id, for example: 140 or 999">
+        <div class="hint">Type a number to jump to matching logo ids.</div>
+      </div>
+    </section>
+
+    <section id="grid" class="grid" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const total = 1342;
+    const grid = document.getElementById("grid");
+    const search = document.getElementById("search");
+
+    function createCard(id) {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.dataset.id = String(id);
+
+      const box = document.createElement("div");
+      box.className = "logo-box";
+
+      const img = document.createElement("img");
+      img.src = `${id}.png`;
+      img.alt = `Clan logo ${id}`;
+      img.loading = "lazy";
+
+      const title = document.createElement("div");
+      title.className = "id";
+      title.textContent = `ID ${id}`;
+
+      const file = document.createElement("div");
+      file.className = "file";
+      file.textContent = `${id}.png`;
+
+      box.appendChild(img);
+      card.appendChild(box);
+      card.appendChild(title);
+      card.appendChild(file);
+      return card;
+    }
+
+    function renderAll() {
+      const fragment = document.createDocumentFragment();
+      for (let id = 0; id < total; id += 1) {
+        fragment.appendChild(createCard(id));
+      }
+      grid.appendChild(fragment);
+    }
+
+    function filterCards(value) {
+      const query = value.trim();
+      const cards = grid.children;
+      for (const card of cards) {
+        const visible = query === "" || card.dataset.id.includes(query);
+        card.classList.toggle("hidden", !visible);
+      }
+    }
+
+    renderAll();
+    search.addEventListener("input", (event) => {
+      filterCards(event.target.value);
+    });
+  </script>
+</body>
+</html>

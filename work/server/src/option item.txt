@@ -1,0 +1,132 @@
+=-=================list_atb=====================
+0 - Tấn công
+1 - Thủ vật
+2 - Né tránh
+3 - Chính xác
+4 - Chí mạng
+5 - Sức khỏe
+6 - Thủ ma
+7 - chỉ số 7
+8 - chỉ số 8
+9 - chỉ số 9
+10 - Tăng sức mạnh
+11 - Tăng nhanh nhẹn
+12 - Tăng tinh thần
+13 - Tăng sức khoẻ
+14 - Gây mù
+15 - Đóng băng
+16 - Trúng độc
+17 - Gây choáng
+18 - Hoá thạch
+19 - Giảm tốc
+20 - Kháng giảm tốc
+21 - Kháng trúng độc
+22 - Kháng gây mù
+23 - Kháng đóng băng
+24 - Kháng gây choáng
+25 - Kháng hoá thạch
+26 - Tăng x2 mỗi lần đánh
+27 - Tăng tỷ lệ rớt bảo vật
+28 - Giảm st vật
+29 - Giảm st ma
+30 - Tăng tấn công
+31 - Xuyên giáp
+32 - Phản st
+=-=================list_newAtb=====================
+0 - Tăng HP
+1 - Tăng MP
+2 - Cộng sức mạnh
+3 - Cộng khéo léo
+4 - Cộng tinh thần
+5 - Cộng sức khoẻ
+6 - Cộng kỹ năng
+7 - Tăng chí mạng
+8 - Tăng st chí mạng
+9 - chưa dùng
+=-=================list_addMoreLevelSkill=====================
+0 - kỹ năng 1 cộng thêm
+1 - kỹ năng 2 cộng thêm
+2 - kỹ năng 3 cộng thêm
+3 - kỹ năng 4 cộng thêm
+4 - kỹ năng 5 cộng thêm
+5 - kỹ năng 6 cộng thêm
+6 - kỹ năng 7 cộng thêm
+7 - kỹ năng 8 cộng thêm
+8 - kỹ năng 9 cộng thêm
+9 - kỹ năng 10 cộng thêm
+10 - kỹ năng 11 cộng thêm
+11 - kỹ năng 12 cộng thêm
+12 - kỹ năng 13 cộng thêm
+13 - kỹ năng 14 cộng thêm
+14 - kỹ năng 15 cộng thêm
+=-=================list_lockAtb=====================
+0 - Tăng công
+1 - Tăng thủ ma
+2 - Tăng thủ vật
+=-=================list_otherAtt=====================
+0 - Bỏ qua tc ma
+1 - Bỏ qua tc vật
+2 - Tăng thủ ma trang bị
+3 - Tăng thủ vật trang bị
+4 - Bạo kích
+5 - Sét lan
+6 - Độc lan
+7 - Băng lan
+8 - Tăng sét lan
+9 - Tăng độc lan
+10 - Tăng băng lan
+11 - Tăng st băng lan
+12 - Tăng st sét lan
+13 - Tăng st độc lan
+14 - Hoá người tuyết
+15 - Kháng bạo kích
+16 - Hút máu
+17 - Hồi HP
+18 - Hồi MP
+19 - Tàn phế
+20 - Hấp thu sát thương
+21 - Câm lặng
+22 - Tăng tỷ lệ rớt vật phẩm
+23 - Tăng tỷ lệ rớt xu
+24 - Kháng băng lan
+25 - Kháng sét lan
+26 - Kháng độc lan
+27 - Tăng thủ trang bị
+28 - Lửa lan
+29 - Tăng lửa lan
+30 - Tăng st lửa lan
+31 - Kháng lửa lan
+32 - St hắc ám
+33 - St ánh sáng
+34 - Xh hắc ám
+35 - Xh ánh sáng
+36 - Gây hoảng sợ:
+37 - Xh hoảng sợ
+38 - St theo chủ
+39 - Sức khoẻ
+40 - St max Hp
+41 - Ru ngủ
+42 - Choáng
+43 - Bỏng
+44 - Trúng độc
+45 - Suy yếu
+46 - Chuyển st qua mp
+47 - Gia tăng tc
+48 - Hút hp
+49 - Sát thương độc
+50 - Tăng exp
+51 - Tác động suy yếu
+52 - Tl hút hp
+53 - Nhân thêm st khi bỏng
+54 - Sát thương chuẩn
+55 - Chỉ số vũ khí tăng
+56 - Tỷ lệ gây sát thương chuẩn
+57 - Giảm sát thương cuối
+58 - Nguyệt ảnh gây st(10%-15%) tl xuất hiện
+59 - Kháng hoả
+60 - Kháng thủy
+61 - Kháng mộc
+62 - Kháng kim
+63 - Kháng thổ
+64 - Giá lượng
+65 - Số lượng

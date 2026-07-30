@@ -1,0 +1,26 @@
+﻿KPAH Win10 production preflight
+Generated: 2026-04-25 09:49:08
+RepoRoot: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL
+
+[Current runtime]
+Game port: 19129
+Login port: 8023
+Game owner: java.exe PID 15404
+Login owner: java.exe PID 9536
+
+[Detected binaries]
+Java bin: C:\Program Files\Java\jdk-23\bin\
+PHP exe: C:\xampp\php\php-cgi.exe
+Nginx exe: missing
+mysqldump.exe: C:\xampp\mysql\bin\mysqldump.exe
+
+[Config hygiene]
+server.ini db.user = root
+server.ini db.password empty = yes
+loginServer/server.ini db.user = root
+loginServer/server.ini db.password empty = yes
+
+[Notes]
+- Script nay chi doc va bao cao, khong thay doi may.
+- Neu DB password con trong, can doi truoc cutover.
+- Neu Nginx/PHP chua co, van co the render stage truoc.

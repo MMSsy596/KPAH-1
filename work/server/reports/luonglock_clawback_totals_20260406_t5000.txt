@@ -1,0 +1,1 @@
+﻿threshold=5000	accounts=69	total_clawback_lk=5122260

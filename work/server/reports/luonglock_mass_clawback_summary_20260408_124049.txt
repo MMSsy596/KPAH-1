@@ -1,0 +1,16 @@
+Generated: 2026-04-08 12:40:50
+Mode: apply
+Policy: lk_bug_luckybag_only_20260408
+Scan chars: 37
+Affected chars: 13
+Affected accounts: 13
+Chars with DB/PINFO mismatch: 0
+Total before effective LK: 89262
+Total allowed lucky bag LK: 7816
+Total clawback LK: 81446
+Total after LK: 7816
+Char report: reports/luonglock_mass_clawback_chars_20260408_124049.tsv
+Account report: reports/luonglock_mass_clawback_accounts_20260408_124049.tsv
+Apply SQL: reports/luonglock_mass_clawback_apply_20260408_124049.sql
+Backup SQL: db_backups/incident_luonglock_mass_clawback_20260408_124049/tob_char_luonglock_before.sql
+Timestamp key: 20260408_124049

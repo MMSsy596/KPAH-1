@@ -1,0 +1,5 @@
+Main-Class: LivePotionGrant
+Agent-Class: LivePotionGrant
+Can-Redefine-Classes: false
+Can-Retransform-Classes: false
+

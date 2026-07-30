@@ -8,6 +8,22 @@
 
 # Local-only configuration and generated secrets.
 /local-config/
+/.toolchains/
+/work/server/server.ini
+/work/server/loginServer/server.ini
+/work/server/config/sql_credentials_*.txt
+/work/server/QueryTmp*.java
+/work/server/runtime/ambient_bot_roster.txt
+/work/server/logs/
+/work/server/tools/work/
+/work/server/tools/work_multi/
+/work/server/tools/license_admin/private/
+/work/server/**/.env
+/work/server/web/web/.runtime/
+/work/client-j2me/patcher-classes/
+/work/client-j2me/emulator-classes/
+/work/client-j2me/dist/
+/work/client-j2me/runtime/
 *.local.ini
 *.local.env
 

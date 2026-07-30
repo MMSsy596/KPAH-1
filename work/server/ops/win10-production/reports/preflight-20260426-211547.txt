@@ -1,0 +1,34 @@
+﻿KPAH Win10 production preflight
+Generated: 2026-04-26 21:15:47
+RepoRoot: C:\Users\Administrator\Downloads\SEVER-KPAH-FULL
+
+[Current runtime]
+Game port: 19129
+Login port: 8023
+Local admin port: 18023
+Game owner: not-listening
+Login owner: not-listening
+Local admin owner: not-listening
+
+[Detected binaries]
+Java bin: C:\Program Files\Java\jdk-23\bin\
+PHP exe: C:\xampp\php\php-cgi.exe
+Nginx exe: missing
+mysqldump.exe: C:\xampp\mysql\bin\mysqldump.exe
+
+[Config hygiene]
+server.ini db.user = root
+server.ini db.password empty = yes
+server.ini localAdminEnabled = 1
+server.ini localAdminHost = 127.0.0.1
+server.ini ddosGuardEnabled = 1
+server.ini ddosMaxConnectPerWindow = 12
+server.ini socketBacklog = 512
+loginServer/server.ini db.user = root
+loginServer/server.ini db.password empty = yes
+
+[Notes]
+- Script nay chi doc va bao cao, khong thay doi may.
+- Neu DB password con trong, can doi truoc cutover.
+- Neu Nginx/PHP chua co, van co the render stage truoc.
+- Sau preflight, co the chay apply-win10-hardening.ps1 de dong cac cong noi bo.
