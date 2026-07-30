@@ -492,6 +492,6 @@ After each completed task:
 
 ## Next action
 
-Let the six-hour soak run finish and verify `PASS: True`, then apply the
-Win10 firewall hardening from an elevated PowerShell. Current evidence and the
-remaining commands are recorded in `TEN_PART_READINESS.md`.
+Let the six-hour soak run finish and verify `PASS: True`. Win10 firewall
+hardening was applied successfully at 2026-07-30 11:36:21. Current evidence
+and the remaining command are recorded in `TEN_PART_READINESS.md`.

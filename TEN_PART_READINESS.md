@@ -13,7 +13,7 @@ Ngày kiểm tra: 2026-07-30
 | 5 | Hai tài khoản chơi đồng thời | ĐẠT | Báo cáo `runtime-local/regression/20260730-112307/REPORT.md` có `Both clients in game: True` và `Concurrent game connections: 2`. |
 | 6 | Party, trade và PvP cơ bản | ĐẠT | Cùng báo cáo trên ghi `ok=1` và `party=true,trade=true,pvp=true`. Party dùng luồng mời/tham gia thật, trade dùng handshake/chốt thật, PvP đi qua `Map.doAttackPlayer`. |
 | 7 | Restart không mất dữ liệu | ĐẠT | EXP, potion và quest được đối chiếu trước/sau logout, sau đó dừng và mở lại game/login server; dữ liệu giữ nguyên. |
-| 8 | Khóa các cổng nội bộ | CHỜ QUYỀN ADMIN | Admin HTTP và server-list chỉ bind loopback. Script firewall đã được sửa để chỉ mở cổng game và chặn `8023`, `18023`, `18080`, `9072`, `3306`, nhưng Windows từ chối áp dụng vì PowerShell hiện không chạy Administrator. |
+| 8 | Khóa các cổng nội bộ | ĐẠT | Đã áp dụng thành công lúc `2026-07-30 11:36:21`. Windows Firewall chỉ cho phép TCP `19129` và chặn inbound `8023`, `18023`, `18080`, `9072`, `3306` trên mọi profile. Report: `work/server/ops/win10-production/reports/hardening-20260730-113621.txt`. |
 | 9 | Backup và khôi phục thử | ĐẠT | Backup local hoàn thành tại `runtime-local/backups/latest/kpah_server_latest.zip`. Restore sang schema tạm, kiểm tra 2 bảng account, 69 bảng game, 8 account, 1257 nhân vật, 13 quest rồi xóa schema tạm: PASS. |
 | 10 | Soak test dài hạn | ĐANG CHẠY | Bài soak 6 giờ bắt đầu `2026-07-30 11:21:03` tại `runtime-local/soak/20260730-112103`. Mẫu đầu: DB/login/game/admin đều đạt, PID game `11160`, không có dòng lỗi được nhận diện. |
 
@@ -26,17 +26,10 @@ Ngày kiểm tra: 2026-07-30
 
 ## Việc cần hoàn tất sau mốc này
 
-1. Mở PowerShell bằng **Run as administrator**, chạy:
-
-   ```powershell
-   cd C:\Users\Admin\Desktop\KPAH\work\server
-   .\ops\win10-production\apply-win10-hardening.ps1
-   ```
-
-2. Sau 17:21 ngày 2026-07-30, xem:
+1. Sau 17:21 ngày 2026-07-30, xem:
 
    ```powershell
    Get-Content C:\Users\Admin\Desktop\KPAH\runtime-local\soak\20260730-112103\REPORT.md
    ```
 
-Chỉ khi firewall được áp dụng thành công và báo cáo soak kết thúc với `PASS: True` mới được đánh dấu đủ 10/10 ở mức vận hành.
+Firewall đã hoàn tất. Chỉ còn chờ báo cáo soak kết thúc với `PASS: True` để đánh dấu đủ 10/10 ở mức vận hành.
