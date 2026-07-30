@@ -258,6 +258,15 @@ public final class PatchClientJar {
             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                 MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
                 final String methodName = name == null ? "" : name;
+                if ("f".equals(methodName) && "()V".equals(descriptor)) {
+                    replacedUrl[0] = true;
+                    delegate.visitCode();
+                    delegate.visitInsn(Opcodes.RETURN);
+                    delegate.visitMaxs(0, 1);
+                    delegate.visitEnd();
+                    return new MethodVisitor(Opcodes.ASM8) {
+                    };
+                }
                 return new MethodVisitor(Opcodes.ASM8, delegate) {
                     @Override
                     public void visitLdcInsn(Object value) {

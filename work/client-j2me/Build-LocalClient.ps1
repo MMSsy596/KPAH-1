@@ -1,4 +1,22 @@
+param(
+    [string]$HostName = "127.0.0.1",
+    [string]$OutputName = "grinding2-local.jar",
+    [string]$ClientId = "grinding2-local",
+    [ValidateSet("dist", "release")]
+    [string]$OutputDirectory = "dist"
+)
+
 $ErrorActionPreference = "Stop"
+
+if ($HostName -notmatch '^[A-Za-z0-9.-]+$') {
+    throw "HostName khong hop le."
+}
+if ($OutputName -notmatch '^[A-Za-z0-9._-]+\.jar$') {
+    throw "OutputName phai la ten file .jar an toan."
+}
+if ([string]::IsNullOrWhiteSpace($ClientId)) {
+    throw "ClientId khong duoc de trong."
+}
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $jdkRoot = Get-ChildItem -LiteralPath (Join-Path $repoRoot ".toolchains\jdk17") -Directory |
@@ -12,7 +30,7 @@ if ($null -eq $jdkRoot) {
 $patcherSource = Join-Path $repoRoot "work\server\tools\client_jar_auth\PatchClientJar.java"
 $sourceJar = Join-Path $repoRoot "work\server\tools\client_jar_auth\sources\grinding2.jar"
 $classesDir = Join-Path $PSScriptRoot "patcher-classes"
-$outputJar = Join-Path $PSScriptRoot "dist\grinding2-local.jar"
+$outputJar = Join-Path $PSScriptRoot ($OutputDirectory + "\" + $OutputName)
 
 New-Item -ItemType Directory -Force -Path $classesDir, (Split-Path -Parent $outputJar) | Out-Null
 
@@ -31,9 +49,16 @@ if ($LASTEXITCODE -ne 0) {
     PatchClientJar `
     $sourceJar `
     $outputJar `
-    "grinding2-local" `
-    "127.0.0.1" `
+    $ClientId `
+    $HostName `
     "http://127.0.0.1:18080/NQSH2.txt"
 if ($LASTEXITCODE -ne 0) {
     throw "Va client J2ME that bai."
 }
+
+$hash = Get-FileHash -Algorithm SHA256 -LiteralPath $outputJar
+$hashLine = "{0} *{1}" -f $hash.Hash.ToLowerInvariant(), (Split-Path -Leaf $outputJar)
+$hashLine | Set-Content -LiteralPath ($outputJar + ".sha256") -Encoding ASCII
+Write-Host "J2ME client build OK: $outputJar"
+Write-Host "Server: ${HostName}:19129"
+Write-Host "SHA256: $($hash.Hash)"
