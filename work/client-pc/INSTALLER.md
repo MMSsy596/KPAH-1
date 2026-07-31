@@ -23,6 +23,9 @@ The player downloads only the setup EXE, installs without Administrator
 rights and launches KPAH from the Desktop or Start menu. The installer
 contains no database, server configuration, admin token or account password.
 
+The PC build supports both the top number row and NumPad 0-9 in text fields.
+Num Lock must be enabled when using the numeric keypad.
+
 The host embedded during the build must be reachable from the player's PC:
 
 - same LAN: use the server PC's LAN address;

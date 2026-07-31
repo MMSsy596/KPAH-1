@@ -77,6 +77,7 @@ Host: $HostName
 Port: $Port
 
 Run KPAH_276.exe to play.
+Keyboard: top-row digits and NumPad 0-9 are supported (Num Lock must be on).
 Do not copy server.ini, database files, or admin credentials into this folder.
 "@ | Set-Content -LiteralPath (Join-Path $outputRoot "README.txt") -Encoding UTF8
 

@@ -74,6 +74,7 @@ public static class PatchPcServerBinding
         PatchLegacyNetworkLiterals(module);
         PatchServerListScr(module);
         PatchSessionConnect(module);
+        PatchNumpadKeys(module);
 
         string tempPath = assemblyPath + ".binding";
         module.Write(tempPath, new WriterParameters { WriteSymbols = false });
@@ -81,6 +82,93 @@ public static class PatchPcServerBinding
 
         File.Copy(tempPath, assemblyPath, true);
         File.Delete(tempPath);
+        VerifyNumpadKeys(assemblyPath);
+    }
+
+    private static void PatchNumpadKeys(ModuleDefinition module)
+    {
+        TypeDefinition keyMapType = module.Types.FirstOrDefault(t => t.Name == "MyKeyMap");
+        if (keyMapType == null)
+        {
+            throw new InvalidOperationException("Khong tim thay MyKeyMap");
+        }
+
+        MethodDefinition mapMethod = keyMapType.Methods.FirstOrDefault(m =>
+            m.Name == "map" && m.IsStatic && m.Parameters.Count == 1 &&
+            m.ReturnType.MetadataType == MetadataType.Int32);
+        if (mapMethod == null || !mapMethod.HasBody)
+        {
+            throw new InvalidOperationException("Khong tim thay MyKeyMap.map");
+        }
+
+        // Unity KeyCode.Keypad0..Keypad9 are 256..265. The original client only
+        // maps Alpha0..Alpha9 (48..57), so translate NumPad keys to the same
+        // ASCII values before the legacy lookup table runs.
+        ILProcessor il = mapMethod.Body.GetILProcessor();
+        Instruction originalFirst = mapMethod.Body.Instructions.First();
+        Instruction[] prefix = new[]
+        {
+            il.Create(OpCodes.Ldarg_0),
+            il.Create(OpCodes.Ldc_I4, 256),
+            il.Create(OpCodes.Blt, originalFirst),
+            il.Create(OpCodes.Ldarg_0),
+            il.Create(OpCodes.Ldc_I4, 265),
+            il.Create(OpCodes.Bgt, originalFirst),
+            il.Create(OpCodes.Ldarg_0),
+            il.Create(OpCodes.Ldc_I4, 208),
+            il.Create(OpCodes.Sub),
+            il.Create(OpCodes.Ret)
+        };
+        foreach (Instruction instruction in prefix)
+        {
+            il.InsertBefore(originalFirst, instruction);
+        }
+
+        Console.WriteLine("NUMPAD_KEYS=0-9");
+    }
+
+    private static void VerifyNumpadKeys(string assemblyPath)
+    {
+        using (ModuleDefinition module = ModuleDefinition.ReadModule(assemblyPath))
+        {
+            TypeDefinition keyMapType = module.Types.FirstOrDefault(t => t.Name == "MyKeyMap");
+            MethodDefinition mapMethod = keyMapType == null ? null : keyMapType.Methods.FirstOrDefault(m =>
+                m.Name == "map" && m.IsStatic && m.Parameters.Count == 1);
+            if (mapMethod == null || !mapMethod.HasBody || mapMethod.Body.Instructions.Count < 10)
+            {
+                throw new InvalidOperationException("Khong the xac minh ban va NumPad");
+            }
+
+            Instruction[] instructions = mapMethod.Body.Instructions.Take(10).ToArray();
+            bool valid = instructions[0].OpCode == OpCodes.Ldarg_0 &&
+                GetInt32Constant(instructions[1]) == 256 &&
+                instructions[2].OpCode == OpCodes.Blt &&
+                instructions[3].OpCode == OpCodes.Ldarg_0 &&
+                GetInt32Constant(instructions[4]) == 265 &&
+                instructions[5].OpCode == OpCodes.Bgt &&
+                instructions[6].OpCode == OpCodes.Ldarg_0 &&
+                GetInt32Constant(instructions[7]) == 208 &&
+                instructions[8].OpCode == OpCodes.Sub &&
+                instructions[9].OpCode == OpCodes.Ret;
+            if (!valid)
+            {
+                throw new InvalidOperationException("Ban va NumPad khong dung mau IL mong doi");
+            }
+        }
+        Console.WriteLine("NUMPAD_VERIFY=PASS");
+    }
+
+    private static int GetInt32Constant(Instruction instruction)
+    {
+        if (instruction.OpCode == OpCodes.Ldc_I4)
+        {
+            return (int)instruction.Operand;
+        }
+        if (instruction.OpCode == OpCodes.Ldc_I4_S)
+        {
+            return (sbyte)instruction.Operand;
+        }
+        throw new InvalidOperationException("Instruction khong phai hang so Int32: " + instruction.OpCode);
     }
 
     private static void PatchLegacyNetworkLiterals(ModuleDefinition module)
