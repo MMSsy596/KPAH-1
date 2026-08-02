@@ -1,9 +1,26 @@
 $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$javaHome = Join-Path $repoRoot ".toolchains\jdk8\jdk8u492-b09"
-$javac = Join-Path $javaHome "bin\javac.exe"
-$jar = Join-Path $javaHome "bin\jar.exe"
+$toolchainsRoot = Join-Path $repoRoot ".toolchains"
+$programFilesJava = Join-Path ([Environment]::GetFolderPath("ProgramFiles")) "Java"
+$jdkCandidates = @()
+foreach ($jdkSearchRoot in @($toolchainsRoot, $programFilesJava)) {
+    if (Test-Path -LiteralPath $jdkSearchRoot) {
+        $jdkCandidates += Get-ChildItem -LiteralPath $jdkSearchRoot -Directory |
+            Where-Object {
+                (Test-Path (Join-Path $_.FullName "bin\javac.exe")) -and
+                (Test-Path (Join-Path $_.FullName "bin\jar.exe"))
+            }
+    }
+}
+$jdkRoot = $jdkCandidates | Sort-Object Name | Select-Object -First 1
+if ($null -ne $jdkRoot) {
+    $javac = Join-Path $jdkRoot.FullName "bin\javac.exe"
+    $jar = Join-Path $jdkRoot.FullName "bin\jar.exe"
+} else {
+    $javac = (Get-Command javac.exe -ErrorAction Stop).Source
+    $jar = (Get-Command jar.exe -ErrorAction Stop).Source
+}
 $sourceJar = Join-Path $repoRoot "work\server\tools\freej2me\v1.52\freej2me.jar"
 $outputJar = Join-Path $PSScriptRoot "dist\freej2me-network.jar"
 $classesDir = Join-Path $PSScriptRoot "emulator-classes"
