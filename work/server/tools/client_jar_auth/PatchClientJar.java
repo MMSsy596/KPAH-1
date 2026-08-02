@@ -22,6 +22,7 @@ import javax.tools.ToolProvider;
 import jdk.internal.org.objectweb.asm.ClassReader;
 import jdk.internal.org.objectweb.asm.ClassVisitor;
 import jdk.internal.org.objectweb.asm.ClassWriter;
+import jdk.internal.org.objectweb.asm.Label;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
 import jdk.internal.org.objectweb.asm.Opcodes;
 
@@ -30,6 +31,8 @@ public final class PatchClientJar {
     private static final String GO_CLASS_ENTRY = "go.class";
     private static final String SERVER_LIST_CLASS_ENTRY = "yv.class";
     private static final String CANVAS_CLASS_ENTRY = "acv.class";
+    private static final String INVENTORY_CLASS_ENTRY = "nu.class";
+    private static final String GAMEPLAY_CLASS_ENTRY = "kpahgameplay.class";
     private static final String AUTH_CLASS_NAME = "kpahauth";
     private static final String AUTH_CLASS_ENTRY = AUTH_CLASS_NAME + ".class";
     private static final String MENU_ICON_ENTRY = "MrQuyet/mid.png";
@@ -40,7 +43,7 @@ public final class PatchClientJar {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.err.println("Usage: PatchClientJar <input.jar> <output.jar> <clientId> [defaultHost] [serverListUrl] [measurementOverride] [defaultPort]");
+            System.err.println("Usage: PatchClientJar <input.jar> <output.jar> <clientId> [defaultHost] [serverListUrl] [measurementOverride] [defaultPort] [gameplayClass]");
             System.exit(1);
         }
         Path inputJar = Paths.get(args[0]).toAbsolutePath().normalize();
@@ -52,6 +55,9 @@ public final class PatchClientJar {
                 ? normalizeHex(args[5])
                 : "";
         int defaultPort = args.length >= 7 ? Integer.parseInt(args[6]) : 19129;
+        Path gameplayClass = args.length >= 8 && !args[7].trim().isEmpty()
+                ? Paths.get(args[7]).toAbsolutePath().normalize()
+                : null;
         if (clientId.isEmpty()) {
             throw new IllegalArgumentException("clientId is empty");
         }
@@ -66,6 +72,30 @@ public final class PatchClientJar {
         }
         Map<String, EntryData> entries = readJar(inputJar);
         ensureLauncherResources(entries);
+        if (gameplayClass != null) {
+            if (!Files.isRegularFile(gameplayClass)) {
+                throw new IllegalArgumentException("Khong tim thay gameplay class: " + gameplayClass);
+            }
+            EntryData canvasEntry = entries.get(CANVAS_CLASS_ENTRY);
+            EntryData inventoryEntry = entries.get(INVENTORY_CLASS_ENTRY);
+            if (canvasEntry == null || inventoryEntry == null) {
+                throw new IllegalStateException("Khong tim thay acv.class/nu.class trong " + inputJar);
+            }
+            entries.put(GAMEPLAY_CLASS_ENTRY, new EntryData(
+                    GAMEPLAY_CLASS_ENTRY,
+                    Files.readAllBytes(gameplayClass),
+                    System.currentTimeMillis(),
+                    JarEntry.DEFLATED,
+                    null,
+                    null
+            ));
+            entries.put(CANVAS_CLASS_ENTRY, canvasEntry.withBytes(
+                    patchGameplayCanvasClass(canvasEntry.bytes)
+            ));
+            entries.put(INVENTORY_CLASS_ENTRY, inventoryEntry.withBytes(
+                    patchGameplayInventoryClass(inventoryEntry.bytes)
+            ));
+        }
         if (!defaultHost.isEmpty()) {
             EntryData serverListEntry = entries.get(SERVER_LIST_CLASS_ENTRY);
             if (serverListEntry == null) {
@@ -107,6 +137,107 @@ public final class PatchClientJar {
         System.out.println("MEASUREMENT=" + measurement);
         System.out.println("OUTPUT_SHA256=" + fileHash);
         System.out.println("OUTPUT_JAR=" + outputJar);
+        if (gameplayClass != null) {
+            System.out.println("GAMEPLAY_ENHANCEMENTS=ENTER,USE_ALL,PLAYER_SUPPORT");
+        }
+    }
+
+    private static byte[] patchGameplayCanvasClass(byte[] sourceBytes) {
+        ClassReader reader = new ClassReader(sourceBytes);
+        ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+        final boolean[] patchedEnter = new boolean[]{false};
+        final boolean[] patchedUpdate = new boolean[]{false};
+        ClassVisitor visitor = new ClassVisitor(Opcodes.ASM8, writer) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
+                if ("keyPressed".equals(name) && "(I)V".equals(descriptor)) {
+                    return new MethodVisitor(Opcodes.ASM8, delegate) {
+                        @Override
+                        public void visitCode() {
+                            super.visitCode();
+                            Label continueOriginal = new Label();
+                            super.visitVarInsn(Opcodes.ILOAD, 1);
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC, "kpahgameplay", "a", "(I)Z", false);
+                            super.visitJumpInsn(Opcodes.IFEQ, continueOriginal);
+                            super.visitInsn(Opcodes.RETURN);
+                            super.visitLabel(continueOriginal);
+                            patchedEnter[0] = true;
+                        }
+                    };
+                }
+                if ("run".equals(name) && "()V".equals(descriptor)) {
+                    return new MethodVisitor(Opcodes.ASM8, delegate) {
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String methodName, String methodDescriptor, boolean isInterface) {
+                            super.visitMethodInsn(opcode, owner, methodName, methodDescriptor, isInterface);
+                            if (!patchedUpdate[0] && opcode == Opcodes.INVOKEVIRTUAL &&
+                                    "aae".equals(owner) && "d".equals(methodName) && "()V".equals(methodDescriptor)) {
+                                super.visitMethodInsn(Opcodes.INVOKESTATIC, "kpahgameplay", "b", "()V", false);
+                                patchedUpdate[0] = true;
+                            }
+                        }
+                    };
+                }
+                return delegate;
+            }
+        };
+        reader.accept(visitor, 0);
+        if (!patchedEnter[0] || !patchedUpdate[0]) {
+            throw new IllegalStateException("Khong patch duoc Enter/update trong acv.class");
+        }
+        return writer.toByteArray();
+    }
+
+    private static byte[] patchGameplayInventoryClass(byte[] sourceBytes) {
+        ClassReader reader = new ClassReader(sourceBytes);
+        ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+        final boolean[] patchedMenu = new boolean[]{false};
+        ClassVisitor visitor = new ClassVisitor(Opcodes.ASM8, writer) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
+                if (!"t".equals(name) || !"()V".equals(descriptor)) {
+                    return delegate;
+                }
+                return new MethodVisitor(Opcodes.ASM8, delegate) {
+                    private boolean waitingForUseCommand;
+
+                    @Override
+                    public void visitLdcInsn(Object value) {
+                        if (!patchedMenu[0] && value instanceof String && "Sử dụng".equals(value)) {
+                            this.waitingForUseCommand = true;
+                        }
+                        super.visitLdcInsn(value);
+                    }
+
+                    @Override
+                    public void visitMethodInsn(int opcode, String owner, String methodName, String methodDescriptor, boolean isInterface) {
+                        super.visitMethodInsn(opcode, owner, methodName, methodDescriptor, isInterface);
+                        if (this.waitingForUseCommand && !patchedMenu[0] &&
+                                opcode == Opcodes.INVOKEVIRTUAL && "java/util/Vector".equals(owner) &&
+                                "addElement".equals(methodName) && "(Ljava/lang/Object;)V".equals(methodDescriptor)) {
+                            super.visitVarInsn(Opcodes.ALOAD, 2);
+                            super.visitVarInsn(Opcodes.ILOAD, 1);
+                            super.visitMethodInsn(
+                                    Opcodes.INVOKESTATIC,
+                                    "kpahgameplay",
+                                    "a",
+                                    "(Ljava/util/Vector;I)V",
+                                    false
+                            );
+                            this.waitingForUseCommand = false;
+                            patchedMenu[0] = true;
+                        }
+                    }
+                };
+            }
+        };
+        reader.accept(visitor, 0);
+        if (!patchedMenu[0]) {
+            throw new IllegalStateException("Khong patch duoc menu Dung tat ca trong nu.class");
+        }
+        return writer.toByteArray();
     }
 
     private static Map<String, EntryData> readJar(Path jarPath) throws IOException {

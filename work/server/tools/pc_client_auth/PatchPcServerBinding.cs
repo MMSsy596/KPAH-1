@@ -12,12 +12,13 @@ public static class PatchPcServerBinding
     private static int forcedPort = 19129;
     private static sbyte forcedIndex = 0;
     private static string forcedServerListUrl = "http://127.0.0.1:18080/NQSH2.txt";
+    private static string gameplayHelperPath;
 
     public static int Main(string[] args)
     {
         if (args.Length < 1)
         {
-            Console.Error.WriteLine("Usage: PatchPcServerBinding <assembly-csharp.dll> [host] [port] [server-name] [server-list-url]");
+            Console.Error.WriteLine("Usage: PatchPcServerBinding <assembly-csharp.dll> [host] [port] [server-name] [server-list-url] [gameplay-helper.dll]");
             return 1;
         }
 
@@ -51,6 +52,15 @@ public static class PatchPcServerBinding
         {
             forcedServerListUrl = args[4].Trim();
         }
+        if (args.Length >= 6 && !string.IsNullOrWhiteSpace(args[5]))
+        {
+            gameplayHelperPath = Path.GetFullPath(args[5]);
+        }
+        if (string.IsNullOrEmpty(gameplayHelperPath) || !File.Exists(gameplayHelperPath))
+        {
+            Console.Error.WriteLine("Khong tim thay gameplay helper: " + gameplayHelperPath);
+            return 4;
+        }
 
         PatchAssembly(assemblyPath);
         Console.WriteLine("SERVER_NAME=" + forcedServerName);
@@ -75,6 +85,9 @@ public static class PatchPcServerBinding
         PatchServerListScr(module);
         PatchSessionConnect(module);
         PatchNumpadKeys(module);
+        PatchPersistentLogin(module);
+        PatchGameplayEnhancements(module);
+        PatchAutoTrainMenuContinuity(module);
 
         string tempPath = assemblyPath + ".binding";
         module.Write(tempPath, new WriterParameters { WriteSymbols = false });
@@ -83,6 +96,293 @@ public static class PatchPcServerBinding
         File.Copy(tempPath, assemblyPath, true);
         File.Delete(tempPath);
         VerifyNumpadKeys(assemblyPath);
+        VerifyPersistentLogin(assemblyPath);
+        VerifyGameplayEnhancements(assemblyPath);
+        VerifyAutoTrainMenuContinuity(assemblyPath);
+    }
+
+    private static void PatchAutoTrainMenuContinuity(ModuleDefinition module)
+    {
+        TypeDefinition gameScrType = module.Types.FirstOrDefault(t => t.Name == "GameScr");
+        MethodDefinition update = gameScrType == null ? null : gameScrType.Methods.FirstOrDefault(m =>
+            m.Name == "update" && m.Parameters.Count == 0 && m.HasBody);
+        if (update == null)
+        {
+            throw new InvalidOperationException("Khong tim thay GameScr.update");
+        }
+
+        Instruction currentScreenCheck = update.Body.Instructions.FirstOrDefault(i =>
+        {
+            FieldReference field = i.Operand as FieldReference;
+            return i.OpCode == OpCodes.Ldsfld && field != null &&
+                field.DeclaringType.Name == "Canvas" && field.Name == "currentScreen";
+        });
+        Instruction typeCheck = currentScreenCheck == null ? null : currentScreenCheck.Next;
+        Instruction branch = typeCheck == null ? null : typeCheck.Next;
+        TypeReference checkedType = typeCheck == null ? null : typeCheck.Operand as TypeReference;
+        if (currentScreenCheck == null || typeCheck.OpCode != OpCodes.Isinst ||
+            checkedType == null || checkedType.Name != "GameScr" || branch.OpCode != OpCodes.Brfalse)
+        {
+            throw new InvalidOperationException("Khong tim thay dieu kien dung auto khi mo menu");
+        }
+
+        // GameScr.update vẫn được các màn hình túi đồ/menu gọi để cập nhật nền.
+        // Bỏ riêng điều kiện currentScreen để vòng auto tiếp tục, không thay đổi xử lý phím của menu.
+        currentScreenCheck.OpCode = OpCodes.Nop;
+        currentScreenCheck.Operand = null;
+        typeCheck.OpCode = OpCodes.Nop;
+        typeCheck.Operand = null;
+        branch.OpCode = OpCodes.Nop;
+        branch.Operand = null;
+        Console.WriteLine("AUTO_TRAIN_MENU=CONTINUE");
+    }
+
+    private static void VerifyAutoTrainMenuContinuity(string assemblyPath)
+    {
+        using (ModuleDefinition module = ModuleDefinition.ReadModule(assemblyPath))
+        {
+            TypeDefinition gameScrType = module.Types.FirstOrDefault(t => t.Name == "GameScr");
+            MethodDefinition update = gameScrType == null ? null : gameScrType.Methods.FirstOrDefault(m =>
+                m.Name == "update" && m.Parameters.Count == 0 && m.HasBody);
+            bool stillBlocksByCurrentScreen = update != null && update.Body.Instructions.Any(i =>
+            {
+                FieldReference field = i.Operand as FieldReference;
+                return i.OpCode == OpCodes.Ldsfld && field != null &&
+                    field.DeclaringType.Name == "Canvas" && field.Name == "currentScreen" &&
+                    i.Next != null && i.Next.OpCode == OpCodes.Isinst &&
+                    i.Next.Next != null && i.Next.Next.OpCode == OpCodes.Brfalse;
+            });
+            if (update == null || stillBlocksByCurrentScreen)
+            {
+                throw new InvalidOperationException("Khong the xac minh auto train tiep tuc khi mo menu");
+            }
+        }
+        Console.WriteLine("AUTO_TRAIN_MENU_VERIFY=PASS");
+    }
+
+    private static void PatchGameplayEnhancements(ModuleDefinition module)
+    {
+        AssemblyDefinition helperAssembly = AssemblyDefinition.ReadAssembly(gameplayHelperPath);
+        try
+        {
+            TypeDefinition inputType = helperAssembly.MainModule.Types.FirstOrDefault(t =>
+                t.FullName == "KpahPcGameplay.InputEnhancements");
+            TypeDefinition potionType = helperAssembly.MainModule.Types.FirstOrDefault(t =>
+                t.FullName == "KpahPcGameplay.PotionUseAll");
+            MethodDefinition handleEnter = inputType == null ? null : inputType.Methods.FirstOrDefault(m =>
+                m.Name == "HandleEnter" && m.Parameters.Count == 1);
+            MethodDefinition addMenuCommand = potionType == null ? null : potionType.Methods.FirstOrDefault(m =>
+                m.Name == "AddMenuCommand" && m.Parameters.Count == 2);
+            MethodDefinition updateUseAll = potionType == null ? null : potionType.Methods.FirstOrDefault(m =>
+                m.Name == "Update" && m.Parameters.Count == 0);
+            if (handleEnter == null || addMenuCommand == null || updateUseAll == null)
+            {
+                throw new InvalidOperationException("Gameplay helper thieu method can thiet");
+            }
+
+            PatchCanvasEnter(module, module.ImportReference(handleEnter));
+            PatchCanvasUpdate(module, module.ImportReference(updateUseAll));
+            PatchPotionMenu(module, module.ImportReference(addMenuCommand));
+        }
+        finally
+        {
+            helperAssembly.Dispose();
+        }
+
+        Console.WriteLine("GAMEPLAY_ENHANCEMENTS=ENTER,USE_ALL,PLAYER_SUPPORT");
+    }
+
+    private static void PatchCanvasEnter(ModuleDefinition module, MethodReference handleEnter)
+    {
+        TypeDefinition canvasType = module.Types.FirstOrDefault(t => t.Name == "Canvas");
+        MethodDefinition keyPress = canvasType == null ? null : canvasType.Methods.FirstOrDefault(m =>
+            m.Name == "keyPress" && m.Parameters.Count == 1 && m.HasBody);
+        if (keyPress == null)
+        {
+            throw new InvalidOperationException("Khong tim thay Canvas.keyPress");
+        }
+
+        ILProcessor il = keyPress.Body.GetILProcessor();
+        Instruction originalFirst = keyPress.Body.Instructions.First();
+        Instruction continueOriginal = il.Create(OpCodes.Nop);
+        il.InsertBefore(originalFirst, il.Create(OpCodes.Ldarg_1));
+        il.InsertBefore(originalFirst, il.Create(OpCodes.Call, handleEnter));
+        il.InsertBefore(originalFirst, il.Create(OpCodes.Brfalse, continueOriginal));
+        il.InsertBefore(originalFirst, il.Create(OpCodes.Ret));
+        il.InsertBefore(originalFirst, continueOriginal);
+    }
+
+    private static void PatchCanvasUpdate(ModuleDefinition module, MethodReference updateUseAll)
+    {
+        TypeDefinition canvasType = module.Types.FirstOrDefault(t => t.Name == "Canvas");
+        MethodDefinition update = canvasType == null ? null : canvasType.Methods.FirstOrDefault(m =>
+            m.Name == "update" && m.Parameters.Count == 0 && m.HasBody);
+        if (update == null)
+        {
+            throw new InvalidOperationException("Khong tim thay Canvas.update");
+        }
+
+        ILProcessor il = update.Body.GetILProcessor();
+        il.InsertBefore(update.Body.Instructions.First(), il.Create(OpCodes.Call, updateUseAll));
+    }
+
+    private static void PatchPotionMenu(ModuleDefinition module, MethodReference addMenuCommand)
+    {
+        TypeDefinition windowType = module.Types.FirstOrDefault(t => t.Name == "WindowInfoScr");
+        MethodDefinition showMenu = windowType == null ? null : windowType.Methods.FirstOrDefault(m =>
+            m.Name == "showMenuForPotion" && m.Parameters.Count == 1 && m.HasBody);
+        if (showMenu == null)
+        {
+            throw new InvalidOperationException("Khong tim thay WindowInfoScr.showMenuForPotion");
+        }
+
+        Instruction useCaption = showMenu.Body.Instructions.FirstOrDefault(i =>
+            i.OpCode == OpCodes.Ldstr && string.Equals(i.Operand as string, "Sử dụng", StringComparison.Ordinal));
+        Instruction addUseCommand = useCaption == null ? null : showMenu.Body.Instructions
+            .SkipWhile(i => i != useCaption)
+            .FirstOrDefault(i =>
+            {
+                MethodReference method = i.Operand as MethodReference;
+                return (i.OpCode == OpCodes.Call || i.OpCode == OpCodes.Callvirt) &&
+                    method != null && method.Name == "addElement" && method.DeclaringType.Name == "mVector";
+            });
+        if (addUseCommand == null || addUseCommand.Previous == null || addUseCommand.Previous.Previous == null)
+        {
+            throw new InvalidOperationException("Khong tim thay vi tri chen menu Dung tat ca");
+        }
+
+        VariableDefinition menuVariable = GetLoadedVariable(showMenu, addUseCommand.Previous.Previous);
+        if (menuVariable == null)
+        {
+            throw new InvalidOperationException("Khong xac dinh duoc bien menu vat pham");
+        }
+
+        ILProcessor il = showMenu.Body.GetILProcessor();
+        Instruction cursor = addUseCommand;
+        cursor = InsertAfter(il, cursor, il.Create(OpCodes.Ldloc, menuVariable));
+        cursor = InsertAfter(il, cursor, il.Create(OpCodes.Ldarg_1));
+        InsertAfter(il, cursor, il.Create(OpCodes.Call, addMenuCommand));
+    }
+
+    private static Instruction InsertAfter(ILProcessor il, Instruction target, Instruction instruction)
+    {
+        il.InsertAfter(target, instruction);
+        return instruction;
+    }
+
+    private static VariableDefinition GetLoadedVariable(MethodDefinition method, Instruction instruction)
+    {
+        if (instruction.OpCode == OpCodes.Ldloc_0)
+        {
+            return method.Body.Variables[0];
+        }
+        if (instruction.OpCode == OpCodes.Ldloc_1)
+        {
+            return method.Body.Variables[1];
+        }
+        if (instruction.OpCode == OpCodes.Ldloc_2)
+        {
+            return method.Body.Variables[2];
+        }
+        if (instruction.OpCode == OpCodes.Ldloc_3)
+        {
+            return method.Body.Variables[3];
+        }
+        if (instruction.OpCode == OpCodes.Ldloc || instruction.OpCode == OpCodes.Ldloc_S)
+        {
+            return instruction.Operand as VariableDefinition;
+        }
+        return null;
+    }
+
+    private static void VerifyGameplayEnhancements(string assemblyPath)
+    {
+        using (ModuleDefinition module = ModuleDefinition.ReadModule(assemblyPath))
+        {
+            int helperCalls = module.Types.SelectMany(t => t.Methods)
+                .Where(m => m.HasBody)
+                .SelectMany(m => m.Body.Instructions)
+                .Count(i =>
+                {
+                    MethodReference method = i.Operand as MethodReference;
+                    return method != null && method.DeclaringType.Namespace == "KpahPcGameplay";
+                });
+            bool hasHelperReference = module.AssemblyReferences.Any(r => r.Name == "KpahPcGameplay");
+            if (!hasHelperReference || helperCalls < 3)
+            {
+                throw new InvalidOperationException("Khong the xac minh patch Enter/Dung tat ca");
+            }
+        }
+        Console.WriteLine("GAMEPLAY_ENHANCEMENTS_VERIFY=PASS");
+    }
+
+    private static void PatchPersistentLogin(ModuleDefinition module)
+    {
+        TypeDefinition mainType = module.Types.FirstOrDefault(t => t.Name == "Main");
+        TypeDefinition rmsType = module.Types.FirstOrDefault(t => t.Name == "RMS");
+        MethodDefinition loadDataGame = mainType == null ? null : mainType.Methods.FirstOrDefault(m =>
+            m.Name == "loadDataGame" && m.Parameters.Count == 0 && m.HasBody);
+        MethodDefinition saveRms = rmsType == null ? null : rmsType.Methods.FirstOrDefault(m =>
+            m.Name == "__saveRMS" && m.Parameters.Count == 2 && m.HasBody);
+        if (loadDataGame == null || saveRms == null)
+        {
+            throw new InvalidOperationException("Khong tim thay Main.loadDataGame/RMS.__saveRMS");
+        }
+
+        Instruction deleteAll = loadDataGame.Body.Instructions.FirstOrDefault(i => IsPlayerPrefsCall(i, "DeleteAll"));
+        if (deleteAll == null)
+        {
+            throw new InvalidOperationException("Khong tim thay PlayerPrefs.DeleteAll trong Main.loadDataGame");
+        }
+
+        // Không xóa PlayerPrefs khi khởi động để tài khoản đã chọn ghi nhớ còn tồn tại ở lần mở sau.
+        deleteAll.OpCode = OpCodes.Nop;
+        deleteAll.Operand = null;
+
+        Instruction setString = saveRms.Body.Instructions.FirstOrDefault(i => IsPlayerPrefsCall(i, "SetString"));
+        if (setString == null)
+        {
+            throw new InvalidOperationException("Khong tim thay PlayerPrefs.SetString trong RMS.__saveRMS");
+        }
+
+        MethodReference setStringMethod = setString.Operand as MethodReference;
+        if (setStringMethod == null)
+        {
+            throw new InvalidOperationException("PlayerPrefs.SetString khong co method reference");
+        }
+        MethodReference saveMethod = new MethodReference("Save", module.TypeSystem.Void, setStringMethod.DeclaringType)
+        {
+            HasThis = false
+        };
+        saveRms.Body.GetILProcessor().InsertAfter(setString, Instruction.Create(OpCodes.Call, module.ImportReference(saveMethod)));
+        Console.WriteLine("REMEMBER_LOGIN=PERSISTENT");
+    }
+
+    private static bool IsPlayerPrefsCall(Instruction instruction, string methodName)
+    {
+        MethodReference method = instruction.Operand as MethodReference;
+        return (instruction.OpCode == OpCodes.Call || instruction.OpCode == OpCodes.Callvirt) &&
+            method != null && method.Name == methodName && method.DeclaringType.FullName == "UnityEngine.PlayerPrefs";
+    }
+
+    private static void VerifyPersistentLogin(string assemblyPath)
+    {
+        using (ModuleDefinition module = ModuleDefinition.ReadModule(assemblyPath))
+        {
+            TypeDefinition mainType = module.Types.FirstOrDefault(t => t.Name == "Main");
+            TypeDefinition rmsType = module.Types.FirstOrDefault(t => t.Name == "RMS");
+            MethodDefinition loadDataGame = mainType == null ? null : mainType.Methods.FirstOrDefault(m =>
+                m.Name == "loadDataGame" && m.Parameters.Count == 0 && m.HasBody);
+            MethodDefinition saveRms = rmsType == null ? null : rmsType.Methods.FirstOrDefault(m =>
+                m.Name == "__saveRMS" && m.Parameters.Count == 2 && m.HasBody);
+            bool stillDeletesLogin = loadDataGame != null && loadDataGame.Body.Instructions.Any(i => IsPlayerPrefsCall(i, "DeleteAll"));
+            bool flushesPlayerPrefs = saveRms != null && saveRms.Body.Instructions.Any(i => IsPlayerPrefsCall(i, "Save"));
+            if (loadDataGame == null || saveRms == null || stillDeletesLogin || !flushesPlayerPrefs)
+            {
+                throw new InvalidOperationException("Khong the xac minh chuc nang ghi nho dang nhap");
+            }
+        }
+        Console.WriteLine("REMEMBER_LOGIN_VERIFY=PASS");
     }
 
     private static void PatchNumpadKeys(ModuleDefinition module)
