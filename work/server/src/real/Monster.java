@@ -51,6 +51,9 @@ public class Monster extends LiveActor {
     public static int BOSS_NGUOI_TUYET;
     public static int timeReBorn;
     public static boolean isCountBoss = true; // Thêm biến static để điều khiển việc đếm boss
+    private int grindingHpPercentApplied = GrindingTuningService.DEFAULT_PERCENT;
+    // Chỉ đánh dấu quái được hệ thống mật độ sinh thêm để có thể gỡ an toàn khi admin giảm cấu hình.
+    public boolean isGrindingDensitySupplemental;
 
     static {
         Monster.r = new Random();
@@ -383,6 +386,7 @@ public class Monster extends LiveActor {
                 if (this.target.isAdmin) {
                     ahp = 0;
                 }
+                ahp = GrindingTuningService.scaleMonsterDamage(this, ahp);
                 this.target.checkNewEffectItem(1, ahp / 10, this);
                 m.dos.writeInt(ahp);
                 target.hp -= Map.abs(ahp);
@@ -446,7 +450,7 @@ public class Monster extends LiveActor {
         int xpGet = 0;
         final int pc = hpLost * 100 / this.hp;
         if (pc >= 100) {
-            return this.xp;
+            return GrindingTuningService.scaleMonsterExp(this, this.xp);
         }
         xpGet = pc * this.xp / 100;
         if (xpGet <= 0) {
@@ -456,7 +460,7 @@ public class Monster extends LiveActor {
         if (this.xp <= 0) {
             this.xp = 1;
         }
-        return xpGet;
+        return GrindingTuningService.scaleMonsterExp(this, xpGet);
     }
 
     public void addXp2Char() {
@@ -483,6 +487,7 @@ public class Monster extends LiveActor {
 
     @Override
     public void update() {
+        this.refreshGrindingHpTuning();
         if (this.isDead) {
             final long now = System.currentTimeMillis();
             if (now > this.bornTime && this.idTemplate != 83) {
@@ -585,6 +590,31 @@ public class Monster extends LiveActor {
             }
         }
         this.updateEffKham();
+    }
+
+    /**
+     * Đổi HP quái theo hệ số mới nhưng giữ nguyên tỷ lệ HP hiện tại.
+     * Mỗi quái nhớ hệ số đã áp dụng để tránh nhân lặp khi admin lưu nhiều lần.
+     */
+    public boolean refreshGrindingHpTuning() {
+        if (!GrindingTuningService.isGrindingMonster(this)) {
+            return false;
+        }
+        final int targetPercent = GrindingTuningService.getMonsterHpPercent();
+        final int currentPercent = Math.max(1, this.grindingHpPercentApplied);
+        if (targetPercent == currentPercent) {
+            return false;
+        }
+
+        final int oldMaxHp = Math.max(1, this.maxhp);
+        final int oldHp = Math.max(0, this.hp);
+        final long scaledMaxHp = (long) oldMaxHp * targetPercent / currentPercent;
+        final int newMaxHp = (int) Math.min(Integer.MAX_VALUE, Math.max(1L, scaledMaxHp));
+        final long scaledHp = (long) oldHp * newMaxHp / oldMaxHp;
+        this.maxhp = newMaxHp;
+        this.hp = this.isDead || oldHp <= 0 ? 0 : (int) Math.min(newMaxHp, Math.max(1L, scaledHp));
+        this.grindingHpPercentApplied = targetPercent;
+        return true;
     }
 
     public boolean isMonsterStand() {
@@ -828,7 +858,10 @@ public class Monster extends LiveActor {
                     x2Player = 0;
                 }
                 Potion pt = null;
-                if (p.receiveXP() != 3 && (Map.randomMillion() < ((p.lvDetail.lv < 15) ? (90000 + 90000 * x2Drop / 100) : (80000 + 80000 * x2Drop / 100)) + p.getLuckyValue() * 100 || this.idTemplate == Map.idGhost)) {
+                if (p.receiveXP() != 3 && (Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(
+                        this,
+                        ((p.lvDetail.lv < 15) ? (90000 + 90000 * x2Drop / 100) : (80000 + 80000 * x2Drop / 100)) + p.getLuckyValue() * 100
+                ) || this.idTemplate == Map.idGhost)) {
                     int totalQuantity;
                     int quantity = totalQuantity = Monster.r.nextInt() % 5 + this.getGoldRcv() / Map.getDivDropXu();
                     if (this.idTemplate == Map.idGhost) {
@@ -854,7 +887,7 @@ public class Monster extends LiveActor {
                         }
                     }
                 }
-                if (p.receiveXP() != 3 && Map.randomMillion() < 500 + 500 * x2Drop / 100) {
+                if (p.receiveXP() != 3 && Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(this, 500 + 500 * x2Drop / 100)) {
                     final int deltalv = Map.abs(p.lvDetail.lv - this.level);
                     if (deltalv <= Map.deltaLVAttackMons) {
                         final byte ptType = 7;
@@ -1267,7 +1300,7 @@ public class Monster extends LiveActor {
                         }
                     }
                 }
-                if (p.receiveXP() != 3 && Map.randomMillion() < 100000 + 100000 * x2Drop / 100 + p.getLuckyValue() * 100) {
+                if (p.receiveXP() != 3 && Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(this, 100000 + 100000 * x2Drop / 100 + p.getLuckyValue() * 100)) {
                     byte ptType5;
                     if (this.getLevel() <= 10) {
                         ptType5 = 1;
@@ -1288,7 +1321,7 @@ public class Monster extends LiveActor {
                         p.idPotion.add(pt.id);
                     }
                 }
-                if (p.receiveXP() != 3 && Map.randomMillion() < 100000 + 100000 * x2Drop / 100 + p.getLuckyValue() * 100) {
+                if (p.receiveXP() != 3 && Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(this, 100000 + 100000 * x2Drop / 100 + p.getLuckyValue() * 100)) {
                     byte ptType5;
                     if (this.getLevel() <= 10) {
                         ptType5 = 4;
@@ -1328,7 +1361,7 @@ public class Monster extends LiveActor {
                         }
                     }
                 }
-                if (p.receiveXP() != 3 && Map.randomMillion() < 500 + 500 * x2Drop / 100 + p.getLuckyValue() * 100) {
+                if (p.receiveXP() != 3 && Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(this, 500 + 500 * x2Drop / 100 + p.getLuckyValue() * 100)) {
                     final int deltalv = Map.abs(p.lvDetail.lv - this.level);
                     if (deltalv <= 15) {
                         final GemItem gem2 = new GemItem(60);
@@ -1345,7 +1378,7 @@ public class Monster extends LiveActor {
                         }
                     }
                 }
-                if (p.receiveXP() != 3 && Map.randomMillion() < 200 + 200 * x2Drop / 100) {
+                if (p.receiveXP() != 3 && Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(this, 200 + 200 * x2Drop / 100)) {
                     final GemItem gem3 = Map.dropGemTuBinh(this.level);
                     if (gem3 != null) {
                         gem3.x = this.x + 5 + droplist.size() * 5;
@@ -1360,7 +1393,7 @@ public class Monster extends LiveActor {
                         }
                     }
                 }
-                if (p.receiveXP() != 3 && (Map.randomMillion() < 1000 + 1000 * x2Drop / 100 + p.getLuckyValue() * 10 || this.idTemplate == Map.idGhost)) {
+                if (p.receiveXP() != 3 && (Map.randomMillion() < GrindingTuningService.scaleRegularDropChance(this, 1000 + 1000 * x2Drop / 100 + p.getLuckyValue() * 10) || this.idTemplate == Map.idGhost)) {
                     final int deltalv = Map.abs(p.lvDetail.lv - this.level);
                     if (deltalv <= 5) {
                         GemItem gem2 = null;
@@ -1383,6 +1416,7 @@ public class Monster extends LiveActor {
                 }
                 int n = Map.getPcDropItem(Map.abs(this.level - p.lvDetail.lv), p.getLuckyValue());
                 n += n * x2Drop / 100;
+                n = GrindingTuningService.scaleRegularDropChance(this, n);
                 if (p.receiveXP() != 3 && (Map.randomMillion() < n || this.idTemplate == Map.idGhost || this.isBoss)) {
                     if (this.isBossSonTinhThuyTinh() && Map.r.nextInt(100) < 30) {
                         final Item item3 = Map.dropItemByIdTemplate(this.inCountry, (Map.r.nextInt(100) < 50) ? 676 : 677);

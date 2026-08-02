@@ -10,6 +10,7 @@ import real.Actor;
 import real.Char;
 import real.CharManager;
 import real.GemTemplate;
+import real.GrindingTuningService;
 import real.Item;
 import real.LevelDetail;
 import real.LuongSon108Manager;
@@ -52,22 +53,22 @@ public final class LocalAdminControlService {
     private static final int LUONG_LOCK_PINFO_INDEX = 69;
     private static final int[] ALLOWED_ADMIN_MATERIALS = new int[]{73, 80, 87, 94, 101, 108, 115, 122, 129, 136, 247, 249};
     private static final String[][] EVENT_DEFINITIONS = new String[][]{
-            {"noel", "Noel (cÃ…Â©)"},
+            {"noel", "Noel (cũ)"},
             {"noel2023", "Noel 2023"},
-            {"tet2017", "TÃ¡ÂºÂ¿t 2017"},
-            {"tetduonglich2024", "TÃ¡ÂºÂ¿t dÃ†Â°Ã†Â¡ng lÃ¡Â»â€¹ch 2024"},
-            {"gioto2016", "GiÃ¡Â»â€” TÃ¡Â»â€¢ 2016"},
+            {"tet2017", "Tết 2017"},
+            {"tetduonglich2024", "Tết dương lịch 2024"},
+            {"gioto2016", "Giỗ Tổ 2016"},
             {"trungthu2016", "Trung Thu 2016"},
-            {"he2017", "HÃƒÂ¨ 2017"},
+            {"he2017", "Hè 2017"},
             {"worldcup2017", "World Cup 2017"},
-            {"minichucnu", "Mini ChÃ¡Â»Â©c NÃ¡Â»Â¯"},
+            {"minichucnu", "Mini Chức Nữ"},
             {"mini", "Mini"},
-            {"mininuichaubau", "Mini NÃƒÂºi ChÃƒÂ¢u BÃƒÂ¡u"},
+            {"mininuichaubau", "Mini Núi Châu Báu"},
             {"blackfriday", "Black Friday"},
             {"haloween2016", "Halloween 2016"},
-            {"sukien83", "SÃ¡Â»Â± kiÃ¡Â»â€¡n 8/3"},
-            {"khabanh", "Truy bÃ¡ÂºÂ¯t KhÃƒÂ¡ BÃ¡ÂºÂ£nh"},
-            {"trainroiluong", "Train rÃ†Â¡i lÃ†Â°Ã¡Â»Â£ng/lÃ†Â°Ã¡Â»Â£ng khÃƒÂ³a"}
+            {"sukien83", "Sự kiện 8/3"},
+            {"khabanh", "Truy bắt Khá Bảnh"},
+            {"trainroiluong", "Train rơi lượng/lượng khóa"}
     };
     private static final Set<String> NPC_NAMES = new LinkedHashSet<String>();
 
@@ -797,7 +798,7 @@ public final class LocalAdminControlService {
             }
             settings.add(new EventSetting(key, EVENT_DEFINITIONS[i][1], TeamServer.getEventOverride(key)));
         }
-        settings.add(new EventSetting("choden", "ChÃ¡Â»Â£ Ã„Âen", TeamServer.getEventOverride("choden")));
+        settings.add(new EventSetting("choden", "Chợ Đen", TeamServer.getEventOverride("choden")));
         return settings;
     }
 
@@ -869,6 +870,35 @@ public final class LocalAdminControlService {
             return CommandResult.ok(message);
         } catch (Exception e) {
             return CommandResult.error("CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t tÃƒÂºi may mÃ¡ÂºÂ¯n thÃ¡ÂºÂ¥t bÃ¡ÂºÂ¡i: " + e.getMessage());
+        }
+    }
+
+    public static GrindingTuningService.Settings snapshotGrindingTuningSettings() {
+        return GrindingTuningService.snapshot();
+    }
+
+    public static CommandResult updateGrindingTuningSettings(java.util.Map<String, String> form) {
+        try {
+            GrindingTuningService.Settings settings = new GrindingTuningService.Settings(
+                    parseBoundedInt(form.get("drop_rate_percent"), 0, GrindingTuningService.MAX_PERCENT, "Tỷ lệ rơi đồ"),
+                    parseBoundedInt(form.get("monster_damage_percent"), 0, GrindingTuningService.MAX_PERCENT, "Sát thương quái"),
+                    parseBoundedInt(form.get("monster_hp_percent"), GrindingTuningService.MIN_HP_PERCENT, GrindingTuningService.MAX_PERCENT, "HP quái"),
+                    parseBoundedInt(form.get("exp_percent"), 0, GrindingTuningService.MAX_PERCENT, "EXP đánh quái"),
+                    parseBoundedInt(form.get("monster_density_percent"), GrindingTuningService.MIN_DENSITY_PERCENT, GrindingTuningService.MAX_DENSITY_PERCENT, "Mật độ quái")
+            );
+
+            // Lưu trước khi áp dụng để khi báo thành công thì cấu hình chắc chắn còn sau lần khởi động lại.
+            TeamServer.saveGrindingTuningSettings(settings);
+            GrindingTuningService.ApplyResult applyResult = GrindingTuningService.apply(settings);
+            String message = "Đã áp dụng cấu hình cày cuốc ngay lập tức; cập nhật HP cho "
+                    + applyResult.updatedMonsters + " quái, thêm "
+                    + applyResult.addedMonsterPositions + " và gỡ "
+                    + applyResult.removedMonsterPositions + " vị trí quái bổ sung trên "
+                    + applyResult.affectedMaps + " bản đồ.";
+            lastAction = message;
+            return CommandResult.ok(message);
+        } catch (Exception e) {
+            return CommandResult.error("Cập nhật cấu hình cày cuốc thất bại: " + e.getMessage());
         }
     }
 

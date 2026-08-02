@@ -6412,54 +6412,62 @@ public class Map implements Runnable {
     }
 
     private void addSupplementalMonstersForSparseTrainMaps() {
-        int targetCount = this.getSparseTrainMonsterTargetCount();
-        if (targetCount <= 0) {
-            return;
-        }
-
-        int totalRegion = this.nRegion > 0 ? this.nRegion : 1;
-
-        for (int region = 0; region < totalRegion; region++) {
-            this.ensureSparseTrainMonsterPopulationForRegion(region, targetCount);
-        }
+        this.refreshGrindingMonsterDensity();
     }
 
     private void ensureSparseTrainMonsterPopulationForRegion(int region) {
-        int targetCount = this.getSparseTrainMonsterTargetCount();
-        if (targetCount <= 0) {
-            return;
-        }
-        this.ensureSparseTrainMonsterPopulationForRegion(region, targetCount);
+        this.reconcileSparseTrainMonsterPopulationForRegion(region);
     }
 
-    private void ensureSparseTrainMonsterPopulationForRegion(int region, int targetCount) {
+    private int[] reconcileSparseTrainMonsterPopulationForRegion(int region) {
+        int configuredTargetCount = this.getSparseTrainMonsterTargetCount();
+        if (configuredTargetCount <= 0) {
+            return new int[]{0, 0};
+        }
         if (region < 0 || (this.nRegion > 0 && region >= this.nRegion)) {
-            return;
+            return new int[]{0, 0};
         }
 
         Hashtable<Short, Monster> sourceMonsters = this.getAllMons(0, region);
         if (sourceMonsters == null || sourceMonsters.isEmpty()) {
-            return;
+            return new int[]{0, 0};
         }
 
         Vector<Monster> baseMonsters = new Vector();
+        Vector<Monster> supplementalMonsters = new Vector();
         Hashtable<Integer, Boolean> occupied = new Hashtable();
         for (Monster monster : sourceMonsters.values()) {
             if (monster == null || monster.isBoss || monster.isMaterialMons()) {
                 continue;
             }
 
-            baseMonsters.add(monster);
+            if (monster.isGrindingDensitySupplemental) {
+                supplementalMonsters.add(monster);
+            } else {
+                baseMonsters.add(monster);
+            }
             occupied.put(this.getMonsterPositionKey(monster.default_x, monster.default_y), true);
         }
 
         if (baseMonsters.isEmpty()) {
-            return;
+            return new int[]{0, 0};
         }
 
-        int extraNeeded = targetCount - baseMonsters.size();
+        // 100% giữ mật độ bãi train hiện tại; khi giảm không bao giờ xóa quái gốc của bản đồ.
+        int scaledTargetCount = (int) Math.round(
+                (double) configuredTargetCount * GrindingTuningService.getMonsterDensityPercent()
+                        / GrindingTuningService.DEFAULT_PERCENT
+        );
+        int targetCount = Math.max(baseMonsters.size(), scaledTargetCount);
+        int extraNeeded = targetCount - baseMonsters.size() - supplementalMonsters.size();
         if (extraNeeded <= 0) {
-            return;
+            int removeCount = Math.min(-extraNeeded, supplementalMonsters.size());
+            this.sortMonstersById(supplementalMonsters);
+            for (int i = 0; i < removeCount; i++) {
+                Monster monster = supplementalMonsters.get(supplementalMonsters.size() - 1 - i);
+                this.removeGrindingDensityMonster(region, monster.id);
+            }
+            return new int[]{0, removeCount};
         }
 
         this.sortMonstersById(baseMonsters);
@@ -6493,6 +6501,46 @@ public class Map implements Runnable {
             }
             round++;
         }
+        return new int[]{added, 0};
+    }
+
+    /**
+     * Đồng bộ mật độ quái cho mọi khu của bãi train khi admin thay đổi cấu hình.
+     * Kết quả là số vị trí quái thêm và gỡ; mỗi vị trí được áp dụng cho cả hai quốc gia.
+     */
+    public int[] refreshGrindingMonsterDensity() {
+        if (this.getSparseTrainMonsterTargetCount() <= 0) {
+            return new int[]{0, 0};
+        }
+        int added = 0;
+        int removed = 0;
+        int totalRegion = this.nRegion > 0 ? this.nRegion : 1;
+        for (int region = 0; region < totalRegion; region++) {
+            int[] changes = this.reconcileSparseTrainMonsterPopulationForRegion(region);
+            added += changes[0];
+            removed += changes[1];
+        }
+        return new int[]{added, removed};
+    }
+
+    private void removeGrindingDensityMonster(int region, short id) {
+        for (int country = 0; country < MAX_COUNTRY; country++) {
+            Monster monster = this.getMonster(id, country, region);
+            if (monster == null || !monster.isGrindingDensitySupplemental) {
+                continue;
+            }
+            try {
+                Message message = new Message(90);
+                message.dos.writeShort(monster.id);
+                message.dos.writeByte(monster.cat);
+                this.sendAllPlayer(message, country, region);
+            } catch (Exception ignored) {
+                // Vẫn gỡ khỏi dữ liệu máy chủ; client sẽ tự đồng bộ lại khi di chuyển hoặc vào lại bản đồ.
+            }
+            monster.isDead = true;
+            monster.target = null;
+            this.removeMonster(id, country, region);
+        }
     }
 
     private void addScaledMonstersForConfiguredMaps() {
@@ -6512,7 +6560,7 @@ public class Map implements Runnable {
             Vector<Monster> baseMonsters = new Vector();
             Hashtable<Integer, Boolean> occupied = new Hashtable();
             for (Monster monster : sourceMonsters.values()) {
-                if (monster == null || monster.isBoss || monster.isMaterialMons()) {
+                if (monster == null || monster.isBoss || monster.isMaterialMons() || monster.isGrindingDensitySupplemental) {
                     continue;
                 }
 
@@ -6731,6 +6779,7 @@ public class Map implements Runnable {
             monster.typeAttack = base.typeAttack;
             monster.inCountry = (byte) country;
             monster.magic_physic = base.magic_physic;
+            monster.isGrindingDensitySupplemental = true;
             if (this.nRegion > 0) {
                 monster.idregion = (byte) region;
                 monster.region = region;
@@ -22262,6 +22311,9 @@ public class Map implements Runnable {
             Map oldMap = player.map;
             int[] var10000 = new int[]{21, 721, 722, 723, 724};
             int[][] mapstart = new int[][]{{70, 1701}, {0, 301}, {80, 1901}};
+            if (PlayerSupportService.instance.handleMenu(player, idNpc, idMenu, idOptionMenu)) {
+                return;
+            }
             if (idNpc == ID_NPC_GIAN_HANG_NONG_DAN) {
                 this.doMenuTruongLangNongDan(player, idNpc, idMenu, idOptionMenu);
                 return;
@@ -26121,6 +26173,11 @@ public class Map implements Runnable {
                                                     "Tham gia luckyBox " + moneyx[player.typeBox][idOptionMenu] + " " + (player.typeBox != 0 ? "luong" : "xu"),
                                                     "joinLucky"
                                             );
+                                    break;
+                                }
+
+                                if (idMenu == 4) {
+                                    player.sendMessage(MessageCreator.createMsgInputText(idNpc, 7, "Nhập mã Giftcode", 0));
                                     break;
                                 }
 
@@ -41553,6 +41610,9 @@ public class Map implements Runnable {
                 Message m = new Message(27);
                 m.dos.writeShort(player.id);
                 String msgChat = message.dis.readUTF().trim();
+                if (PlayerSupportService.instance.handleChatCommand(player, msgChat)) {
+                    return;
+                }
                 if (doTrade.handleTradeMoneyChatCommand(player, msgChat)) {
                     return;
                 }

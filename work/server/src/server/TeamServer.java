@@ -89,6 +89,7 @@ public class TeamServer {
     public static boolean isSuKienTetduonglich2024;
     public static boolean localAdminEnabled;
     public static boolean localMode;
+    public static boolean registrationEnabled;
     public static String localAdminHost;
     public static int localAdminPort;
     public static String localAdminToken;
@@ -166,6 +167,7 @@ public class TeamServer {
         TeamServer.language = 0;
         TeamServer.localAdminEnabled = true;
         TeamServer.localMode = false;
+        TeamServer.registrationEnabled = false;
         TeamServer.localAdminHost = "127.0.0.1";
         TeamServer.localAdminPort = 18023;
         TeamServer.localAdminToken = "";
@@ -633,6 +635,10 @@ public class TeamServer {
         normalizeLuckyBagSettings();
     }
 
+    public static void loadGrindingTuningSettings(Properties p) {
+        GrindingTuningService.load(p);
+    }
+
     public static void loadEventEconomySettings(Properties p) {
         Map.loadEventEconomySettings(p);
     }
@@ -820,6 +826,19 @@ public class TeamServer {
         updateServerIni(updates);
     }
 
+    public static void saveGrindingTuningSettings(GrindingTuningService.Settings settings) throws IOException {
+        if (settings == null) {
+            return;
+        }
+        java.util.Map<String, String> updates = new LinkedHashMap<>();
+        updates.put("sv.grindingDropRatePercent", Integer.toString(settings.dropRatePercent));
+        updates.put("sv.grindingMonsterDamagePercent", Integer.toString(settings.monsterDamagePercent));
+        updates.put("sv.grindingMonsterHpPercent", Integer.toString(settings.monsterHpPercent));
+        updates.put("sv.grindingExpPercent", Integer.toString(settings.expPercent));
+        updates.put("sv.grindingMonsterDensityPercent", Integer.toString(settings.monsterDensityPercent));
+        updateServerIni(updates);
+    }
+
     public static void saveEventEconomySettingsFromMap() throws IOException {
         updateServerIni(Map.snapshotEventEconomySettingsForIni());
     }
@@ -940,6 +959,10 @@ public class TeamServer {
         return TeamServer.localMode || TeamServer.server == 0;
     }
 
+    public static boolean isRegistrationEnabled() {
+        return TeamServer.registrationEnabled || TeamServer.isServerLocal();
+    }
+
     public static boolean isServerTest() {
         return TeamServer.server == 0;
     }
@@ -989,6 +1012,8 @@ public class TeamServer {
             BaoTriDaily.configureLuckyBagGlobalResetState(defaultIfBlank(p.getProperty("sv.luckyBagLastGlobalResetKey"), ""));
             TeamServer.localAdminEnabled = parseIntOrDefault(p.getProperty("sv.localAdminEnabled"), 1) == 1;
             TeamServer.localMode = parseIntOrDefault(p.getProperty("sv.localMode"), 0) == 1;
+            // Tách quyền đăng ký khỏi localMode để production không nhận các đặc quyền kiểm thử.
+            TeamServer.registrationEnabled = parseIntOrDefault(p.getProperty("sv.registrationEnabled"), 0) == 1;
             TeamServer.localAdminHost = defaultIfBlank(p.getProperty("sv.localAdminHost"), "127.0.0.1");
             TeamServer.localAdminPort = Math.max(1, parseIntOrDefault(p.getProperty("sv.localAdminPort"), 18023));
             TeamServer.localAdminToken = defaultIfBlank(p.getProperty("sv.localAdminToken"), "");
@@ -1030,10 +1055,12 @@ public class TeamServer {
             TeamServer.isSuKien83 = Byte.parseByte(p.getProperty("sv.isSuKien83")) == 1;
             TeamServer.loadEventOverrides(p);
             TeamServer.loadLuckyBagSettings(p);
+            TeamServer.loadGrindingTuningSettings(p);
             TeamServer.loadEventEconomySettings(p);
             TeamServer.loadBlackMarketSettings(p);
             TeamServer.loadClientAuthSettings(p);
             TeamServer.loadNetworkShieldSettings(p);
+            System.out.println("Registration enabled=" + TeamServer.isRegistrationEnabled());
     
     
             

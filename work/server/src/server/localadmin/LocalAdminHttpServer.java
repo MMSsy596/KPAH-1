@@ -59,6 +59,8 @@ public final class LocalAdminHttpServer {
             httpServer.createContext("/api/config/events/apply", new EventApplyHandler());
             httpServer.createContext("/api/config/lucky-bag", new LuckyBagSettingsHandler());
             httpServer.createContext("/api/config/lucky-bag/apply", new LuckyBagApplyHandler());
+            httpServer.createContext("/api/config/grinding", new GrindingSettingsHandler());
+            httpServer.createContext("/api/config/grinding/apply", new GrindingApplyHandler());
             httpServer.createContext("/api/config/black-market", new BlackMarketSettingsHandler());
             httpServer.createContext("/api/config/black-market/apply", new BlackMarketApplyHandler());
             httpServer.createContext("/api/ambient-bots", new AmbientBotsHandler());
@@ -418,6 +420,26 @@ public final class LocalAdminHttpServer {
         }
     }
 
+    private static final class GrindingSettingsHandler extends BaseHandler {
+        @Override
+        protected void handleAuthorized(HttpExchange exchange) throws Exception {
+            requireMethod(exchange, "GET");
+            Properties props = okProps("Lấy cấu hình cày cuốc thành công.");
+            appendStatus(props);
+            appendGrindingSettings(props, LocalAdminControlService.snapshotGrindingTuningSettings());
+            writeResponse(exchange, 200, props);
+        }
+    }
+
+    private static final class GrindingApplyHandler extends BaseHandler {
+        @Override
+        protected void handleAuthorized(HttpExchange exchange) throws Exception {
+            requireMethod(exchange, "POST");
+            Map<String, String> form = parseForm(exchange);
+            writeCommandResponse(exchange, LocalAdminControlService.updateGrindingTuningSettings(form));
+        }
+    }
+
     private static final class BlackMarketSettingsHandler extends BaseHandler {
         @Override
         protected void handleAuthorized(HttpExchange exchange) throws Exception {
@@ -662,6 +684,14 @@ public final class LocalAdminHttpServer {
         props.setProperty("amount_hp_max", Integer.toString(settings.rewardMax[3]));
         props.setProperty("amount_mp_max", Integer.toString(settings.rewardMax[4]));
         props.setProperty("max_open_per_day", Integer.toString(settings.maxOpenPerDay));
+    }
+
+    private static void appendGrindingSettings(Properties props, real.GrindingTuningService.Settings settings) {
+        props.setProperty("drop_rate_percent", Integer.toString(settings.dropRatePercent));
+        props.setProperty("monster_damage_percent", Integer.toString(settings.monsterDamagePercent));
+        props.setProperty("monster_hp_percent", Integer.toString(settings.monsterHpPercent));
+        props.setProperty("exp_percent", Integer.toString(settings.expPercent));
+        props.setProperty("monster_density_percent", Integer.toString(settings.monsterDensityPercent));
     }
 
     private static void appendBlackMarketSettings(Properties props, LocalAdminControlService.BlackMarketSettings settings) {
