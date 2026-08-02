@@ -1,0 +1,131 @@
+name: kpah
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: kpah-db
+    env_file:
+      - ./secrets/db.env
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=200
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - internal
+
+  login:
+    image: eclipse-temurin:8-jre-jammy
+    container_name: kpah-login
+    working_dir: /opt/kpah/loginServer
+    command:
+      - java
+      - -Xms256m
+      - -Xmx512m
+      - -Djava.net.preferIPv4Stack=true
+      - -Dfile.encoding=UTF-8
+      - -jar
+      - CheckLoginSocket.jar
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - ./runtime:/opt/kpah
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8023"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - internal
+
+  game:
+    image: eclipse-temurin:8-jre-jammy
+    container_name: kpah-game
+    working_dir: /opt/kpah
+    command:
+      - java
+      - -Xms1g
+      - -Xmx4g
+      - -XX:+UseG1GC
+      - -XX:MaxGCPauseMillis=100
+      - -XX:+ParallelRefProcEnabled
+      - -Djava.net.preferIPv4Stack=true
+      - -Dfile.encoding=UTF-8
+      - -Djava.awt.headless=true
+      - -jar
+      - dist/KPAH2.jar
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - ./runtime:/opt/kpah
+    ports:
+      - "19129:19129"
+      - "18081:4028"
+    depends_on:
+      db:
+        condition: service_healthy
+      login:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/19129"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    restart: unless-stopped
+    stop_grace_period: 120s
+    networks:
+      - internal
+
+  admin-web:
+    build:
+      context: ./runtime/web/web
+    image: kpah-admin-web:local
+    container_name: kpah-admin-web
+    environment:
+      NODE_ENV: production
+      KPAH_RUNTIME_ROOT: /opt/kpah
+      KPAH_ADMIN_BOOTSTRAP_PATH: /var/lib/kpah-admin/admin-bootstrap.txt
+      KPAH_COOKIE_SECURE: "0"
+    volumes:
+      - ./runtime:/opt/kpah:ro
+      - ./admin-data:/var/lib/kpah-admin
+    network_mode: "service:game"
+    depends_on:
+      game:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:4028/noi-vu-kpah-73x9/login',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    restart: unless-stopped
+
+  server-list:
+    image: nginx:alpine
+    container_name: kpah-server-list
+    volumes:
+      - ./server-list:/usr/share/nginx/html:ro
+    ports:
+      - "18080:80"
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+    name: kpah-internal

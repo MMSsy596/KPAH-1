@@ -38,6 +38,11 @@ function getSessionSecret(): string {
   );
 }
 
+function useSecureCookies(): boolean {
+  const configured = process.env.KPAH_COOKIE_SECURE;
+  return configured == null ? process.env.NODE_ENV !== 'development' : configured === '1';
+}
+
 function signPayload(encodedPayload: string): string {
   return createHmac('sha256', getSessionSecret()).update(encodedPayload).digest('base64url');
 }
@@ -123,7 +128,7 @@ export function attachSessionCookie(response: NextResponse, session: AuthSession
     value: encodeAuthSession(session),
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV !== 'development',
+    secure: useSecureCookies(),
     path: '/',
     expires: new Date(session.expiresAt)
   });
@@ -135,7 +140,7 @@ export function clearSessionCookie(response: NextResponse): void {
     value: '',
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV !== 'development',
+    secure: useSecureCookies(),
     path: '/',
     expires: new Date(0)
   });

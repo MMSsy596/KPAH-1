@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const downloadLinks = {
   ios: 'https://testflight.apple.com/join/mBAvwWH1',
-  jar: 'https://www.mediafire.com/file/4twjiwuxm32sjq2/kpahnokia_e63_fix.jar/file',
+  jar: '/tai-game',
   apk: 'https://www.mediafire.com/file/qc99oyw3968d9n4/KPAH_275_grinding-signed.apk/file',
-  pc: 'https://www.mediafire.com/file/7yi14du9zqoj2sq/PC.zip/file'
+  pc: '/tai-game'
 };
 
 type TabKey = 'new' | 'feature' | 'guide';

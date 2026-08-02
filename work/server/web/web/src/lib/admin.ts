@@ -119,6 +119,25 @@ export type AdminPlayerRecord = {
   onlineLocation: string | null;
 };
 
+export type AdminEventSetting = {
+  key: string;
+  label: string;
+  value: number;
+};
+
+export type AdminEventManagement = {
+  events: AdminEventSetting[];
+  luckyBag: Record<string, string>;
+};
+
+export type AdminGrindingSettings = {
+  dropRatePercent: number;
+  monsterDamagePercent: number;
+  monsterHpPercent: number;
+  expPercent: number;
+  monsterDensityPercent: number;
+};
+
 export type AdminDashboardData = {
   serverStatus: {
     onlinePlayers: number;
@@ -156,6 +175,11 @@ function getAdminSessionSecret(): string {
   );
 }
 
+function useSecureCookies(): boolean {
+  const configured = process.env.KPAH_COOKIE_SECURE;
+  return configured == null ? process.env.NODE_ENV !== 'development' : configured === '1';
+}
+
 function signAdminPayload(payload: string): string {
   return createHmac('sha256', getAdminSessionSecret()).update(payload).digest('base64url');
 }
@@ -185,7 +209,8 @@ function verifyAdminPassword(password: string, storedHash: string): boolean {
 }
 
 function resolveBootstrapFilePath(): string {
-  return path.resolve(process.cwd(), '..', '..', 'ops', 'admin-bootstrap.txt');
+  return process.env.KPAH_ADMIN_BOOTSTRAP_PATH
+    || path.resolve(process.env.KPAH_RUNTIME_ROOT || path.resolve(process.cwd(), '..', '..'), 'ops', 'admin-bootstrap.txt');
 }
 
 function decodePropertyValue(value: string): string {
@@ -429,7 +454,7 @@ export function attachAdminSessionCookie(response: NextResponse, session: AdminS
     value: encodeAdminSession(session),
     httpOnly: true,
     sameSite: 'strict',
-    secure: process.env.NODE_ENV !== 'development',
+    secure: useSecureCookies(),
     path: '/',
     expires: new Date(session.expiresAt)
   });
@@ -441,7 +466,7 @@ export function clearAdminSessionCookie(response: NextResponse): void {
     value: '',
     httpOnly: true,
     sameSite: 'strict',
-    secure: process.env.NODE_ENV !== 'development',
+    secure: useSecureCookies(),
     path: '/',
     expires: new Date(0)
   });
@@ -694,6 +719,56 @@ export async function fetchOnlinePlayersDetailed(): Promise<AdminOnlinePlayer[]>
     return players;
   } catch {
     return [];
+  }
+}
+
+export async function fetchEventManagement(): Promise<AdminEventManagement> {
+  try {
+    const [eventResult, luckyBagResult] = await Promise.all([
+      callLocalAdmin('/api/config/events', { method: 'GET' }),
+      callLocalAdmin('/api/config/lucky-bag', { method: 'GET' })
+    ]);
+    const eventCount = Number(eventResult.props.get('event_count') ?? 0);
+    const events: AdminEventSetting[] = [];
+    for (let index = 0; index < eventCount; index += 1) {
+      events.push({
+        key: eventResult.props.get(`event_${index}_key`) ?? '',
+        label: eventResult.props.get(`event_${index}_label`) ?? '',
+        value: Number(eventResult.props.get(`event_${index}_value`) ?? -1)
+      });
+    }
+
+    const luckyBag: Record<string, string> = {};
+    for (const key of [
+      'drop_rate_percent', 'weight_luong', 'weight_luong_lock', 'weight_xu', 'weight_hp', 'weight_mp',
+      'amount_luong_min', 'amount_luong_lock_min', 'amount_xu_min', 'amount_hp_min', 'amount_mp_min',
+      'amount_luong_max', 'amount_luong_lock_max', 'amount_xu_max', 'amount_hp_max', 'amount_mp_max',
+      'max_open_per_day'
+    ]) {
+      luckyBag[key] = luckyBagResult.props.get(key) ?? '0';
+    }
+
+    return { events, luckyBag };
+  } catch {
+    return { events: [], luckyBag: {} };
+  }
+}
+
+export async function fetchGrindingSettings(): Promise<AdminGrindingSettings | null> {
+  try {
+    const result = await callLocalAdmin('/api/config/grinding', { method: 'GET' });
+    if (!result.ok) {
+      return null;
+    }
+    return {
+      dropRatePercent: Number(result.props.get('drop_rate_percent') ?? 100),
+      monsterDamagePercent: Number(result.props.get('monster_damage_percent') ?? 100),
+      monsterHpPercent: Number(result.props.get('monster_hp_percent') ?? 100),
+      expPercent: Number(result.props.get('exp_percent') ?? 100),
+      monsterDensityPercent: Number(result.props.get('monster_density_percent') ?? 100)
+    };
+  } catch {
+    return null;
   }
 }
 

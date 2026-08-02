@@ -23,6 +23,9 @@ const navItems = [
   { href: `${ADMIN_BASE_PATH}/bai-viet`, label: 'Bài trang chủ' },
   { href: `${ADMIN_BASE_PATH}/thong-bao`, label: 'Thông báo' },
   { href: `${ADMIN_BASE_PATH}/nguoi-choi`, label: 'Người chơi' },
+  { href: `${ADMIN_BASE_PATH}/cay-cuoc`, label: 'Cày cuốc' },
+  { href: `${ADMIN_BASE_PATH}/su-kien`, label: 'Sự kiện' },
+  { href: `${ADMIN_BASE_PATH}/gift-code`, label: 'Gift code' },
   { href: `${ADMIN_BASE_PATH}/nhat-ky`, label: 'Nhật ký' }
 ];
 

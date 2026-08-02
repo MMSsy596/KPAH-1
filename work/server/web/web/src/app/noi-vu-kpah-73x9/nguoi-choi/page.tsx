@@ -24,12 +24,12 @@ export default async function AdminPlayersPage(props: any) {
   const notice = typeof searchParams?.notice === 'string' ? searchParams.notice : '';
   const noticeType = typeof searchParams?.noticeType === 'string' ? searchParams.noticeType : 'success';
 
-  const players = q ? await searchPlayers(q) : [];
+  const players = await searchPlayers(q);
   const selectedPlayer = players.find((player) => player.username.toLowerCase() === selectedAccount) ?? players[0] ?? null;
 
   const returnToBase = q ? `${ADMIN_BASE_PATH}/nguoi-choi?q=${encodeURIComponent(q)}` : `${ADMIN_BASE_PATH}/nguoi-choi`;
   const returnTo = selectedPlayer
-    ? `${returnToBase}&account=${encodeURIComponent(selectedPlayer.username)}`
+    ? `${returnToBase}${q ? '&' : '?'}account=${encodeURIComponent(selectedPlayer.username)}`
     : returnToBase;
 
   return (
@@ -58,20 +58,12 @@ export default async function AdminPlayersPage(props: any) {
         </form>
       </section>
 
-      {!q ? (
-        <section className="admin-panel">
-          <div className="admin-empty">
-            Nhập tài khoản hoặc tên nhân vật để mở hồ sơ người chơi. Trang này sẽ chỉ hiện đúng tài khoản bạn đang cần thao tác.
-          </div>
-        </section>
-      ) : null}
-
-      {q && players.length > 0 ? (
+      {players.length > 0 ? (
         <>
           <section className="admin-panel">
             <div className="admin-panel__header">
               <strong>Chọn tài khoản cần xử lý</strong>
-              <span>{players.length} kết quả phù hợp</span>
+              <span>{q ? `${players.length} kết quả phù hợp` : `${players.length} tài khoản mới nhất`}</span>
             </div>
             <div className="admin-player-picker">
               {players.map((player) => {
@@ -224,7 +216,7 @@ export default async function AdminPlayersPage(props: any) {
         </>
       ) : null}
 
-      {q && players.length === 0 ? (
+      {players.length === 0 ? (
         <section className="admin-panel">
           <div className="admin-empty">Không tìm thấy tài khoản hoặc nhân vật phù hợp.</div>
         </section>

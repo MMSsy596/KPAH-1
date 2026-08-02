@@ -41,11 +41,11 @@
   "scripts": {
     "dev": "next dev -p 4028",
     "build": "next build",
-    "start": "next start -H 127.0.0.1 -p 4028",
+    "start": "next start -H 0.0.0.0 -p 4028",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md,json}\"",
-    "serve": "next start -H 127.0.0.1 -p 4028",
+    "serve": "next start -H 0.0.0.0 -p 4028",
     "type-check": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
@@ -55,7 +55,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "lucide-react": "^1.7.0",
     "mysql2": "^3.22.3",
-    "next": "15.1.11",
+    "next": "15.5.22",
     "react": "19.0.3",
     "react-dom": "19.0.3",
     "recharts": "^2.15.2"
@@ -73,7 +73,7 @@
     "eslint-config-next": "^15.2.4",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
-    "postcss": "8.4.8",
+    "postcss": "8.5.25",
     "prettier": "^3.5.3",
     "tailwindcss": "3.4.6",
     "tailwindcss-animate": "^1.0.7",

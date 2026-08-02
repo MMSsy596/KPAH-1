@@ -1,0 +1,10 @@
+[Unit]
+Description=KPAH database and configuration backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/kpah/runtime/ops/ubuntu-docker/backup.sh
+User=root
+Group=root

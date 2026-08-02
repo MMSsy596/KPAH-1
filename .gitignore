@@ -24,6 +24,12 @@
 /work/client-j2me/emulator-classes/
 /work/client-j2me/dist/
 /work/client-j2me/runtime/
+/work/client-j2me/release/
+/work/client-j2me/decompiled-*/
+/work/client-j2me/runtime-*/
+/work/client-pc/release/
+/work/server/web/web/public/downloads/
+/output/
 *.local.ini
 *.local.env
 

@@ -22,7 +22,8 @@ declare global {
 }
 
 function resolveRepoPath(...segments: string[]): string {
-  return path.resolve(process.cwd(), '..', '..', ...segments);
+  const runtimeRoot = process.env.KPAH_RUNTIME_ROOT || path.resolve(process.cwd(), '..', '..');
+  return path.resolve(runtimeRoot, ...segments);
 }
 
 export function parseIni(content: string): Map<string, string> {
