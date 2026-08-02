@@ -189,7 +189,11 @@ public class BaoTriDaily implements Runnable {
                 if (d.getSeconds() % 5 == 0) {
                     BaoTriTay = Database.instance.baotriCMD();
                 }
-                if (d.getSeconds() == 0 && !TeamServer.isServerLocal()) {
+                // Cho phép bỏ qua endpoint trạng thái cũ khi môi trường triển khai không cấu hình URL.
+                if (d.getSeconds() == 0
+                        && !TeamServer.isServerLocal()
+                        && domain != null
+                        && !domain.trim().isEmpty()) {
                     Net.getHttp(domain + "/put_online.php?online=" + SessionManager.instance.size() + "&sv=" + Server);
                 }
                 if (d.getMinutes() == 0 && d.getSeconds() == 0) {

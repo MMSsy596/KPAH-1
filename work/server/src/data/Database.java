@@ -2006,6 +2006,7 @@ public class Database {
 
     public void newDoGetGiftCode(String text, Char player) {
 
+        text = text == null ? "" : text.trim().toLowerCase();
         int userId = player.userID;
         if ("xuluong".equalsIgnoreCase(text.trim())) {
             Database.instance.saveOrtherLog("", player.charname, "CODE: " + text, "blocked_testcode");
@@ -2020,20 +2021,34 @@ public class Database {
         Connection conn = null;
         PreparedStatement pre1 = null;
         ResultSet rs = null;
+        long reservationId = -1L;
+        boolean reservationCommitted = false;
         try {
             conn = getConnection();
+            conn.setAutoCommit(false);
 
-            pre1 = conn.prepareStatement("select * from giftcode_log where giftcode = '" + text + "' AND player = '" + player.charname + "';");
+            pre1 = conn.prepareStatement("select id from giftcode_log where giftcode = ? AND player = ? limit 1");
+            pre1.setString(1, text);
+            pre1.setString(2, player.charname);
             rs = pre1.executeQuery();
             if (rs.next()) {
+                conn.rollback();
                 player.sendMessage(MessageCreator.createServerAlertMessage("Bạn đã nhập mã quà tặng này rồi.", ""));
                 return;
             }
-            String sql = "select * from giftcode where giftcode='" + text + "' and type = 0 limit 1";
-            pre1 = conn.prepareStatement(sql);
+            rs.close();
+            pre1.close();
+
+            pre1 = conn.prepareStatement(
+                    "select * from giftcode where giftcode=? and type=0 and is_active=1 "
+                            + "and (starts_at is null or starts_at<=now()) "
+                            + "and (expires_at is null or expires_at>now()) limit 1 for update"
+            );
+            pre1.setString(1, text);
             rs = pre1.executeQuery();
 
             if (rs.next()) {
+                long giftCodeId = rs.getLong("id");
                 int xu = rs.getInt("xu");
                 int luong = rs.getInt("luong");
                 int luongkhoa = rs.getInt("luongLock");
@@ -2042,9 +2057,49 @@ public class Database {
                 int limit = rs.getInt("limit_use");
 
                 if (limit == 0) {
+                    conn.rollback();
                     player.sendMessage(MessageCreator.createServerAlertMessage("Mã Quà Tặng đã hết lượt sử dụng.", ""));
                     return;
                 }
+
+                rs.close();
+                pre1.close();
+
+                // Giữ lượt và đánh dấu người nhận trước khi phát quà để chống nhận trùng đồng thời.
+                pre1 = conn.prepareStatement(
+                        "insert into giftcode_log(giftcode,player,account_id,character_id,item,xu,luong,luongK,status) "
+                                + "values(?,?,?,?,?,?,?,?, 'reserved')",
+                        Statement.RETURN_GENERATED_KEYS
+                );
+                pre1.setString(1, code);
+                pre1.setString(2, player.charname);
+                pre1.setInt(3, player.userID);
+                pre1.setInt(4, player.charDBID);
+                pre1.setString(5, item);
+                pre1.setInt(6, xu);
+                pre1.setInt(7, luong);
+                pre1.setInt(8, luongkhoa);
+                pre1.executeUpdate();
+                rs = pre1.getGeneratedKeys();
+                if (rs.next()) {
+                    reservationId = rs.getLong(1);
+                }
+                rs.close();
+                pre1.close();
+
+                if (limit >= 1) {
+                    pre1 = conn.prepareStatement("update giftcode set limit_use=limit_use-1 where id=? and limit_use>0");
+                    pre1.setLong(1, giftCodeId);
+                    if (pre1.executeUpdate() != 1) {
+                        conn.rollback();
+                        player.sendMessage(MessageCreator.createServerAlertMessage("Mã Quà Tặng đã hết lượt sử dụng.", ""));
+                        return;
+                    }
+                    pre1.close();
+                }
+                conn.commit();
+                conn.setAutoCommit(true);
+                reservationCommitted = true;
 
                 if (xu != 0) {
                     player.addXu(xu, "nhan tu giftcode" + code);
@@ -2288,27 +2343,56 @@ public class Database {
                 player.sendMessage(MessageCreator.createCharInventoryMessage(player, 0));
                 player.sendMessage(MessageCreator.createServerAlertMessage("Chúc mừng bạn đã nhận được phần quà từ: " + code + ".", ""));
                 Database.instance.saveOrtherLog("", player.charname, "CODE: " + code, "putGiftCode");
-                sql = "insert into giftcode_log set player = '" + player.charname + "', giftcode = '" + text + "', item = '" + item + "', xu = " + xu + ", luong = " + luong + ", luongK = " + luongkhoa + ";";
-                pre1.execute(sql);
-
-                if (limit >= 1) {
-                    String sql_updatelimit = "UPDATE giftcode SET limit_use = limit_use - '1' WHERE giftcode = '" + code + "'";
-                    pre1.execute(sql_updatelimit);
-                }
-                System.out.println(limit);
+                pre1 = conn.prepareStatement("update giftcode_log set status='success', error_message=null where id=?");
+                pre1.setLong(1, reservationId);
+                pre1.executeUpdate();
             } else {
+                conn.rollback();
                 player.sendMessage(MessageCreator.createServerAlertMessage("Mã quà tặng không tồn tại.", ""));
             }
-            // System.out.println("\n" + rs.toString() + "\n");
         } catch (Exception e) {
             e.printStackTrace();
+            try {
+                if (conn != null && reservationCommitted && reservationId > 0L) {
+                    conn.setAutoCommit(true);
+                    PreparedStatement failed = conn.prepareStatement(
+                            "update giftcode_log set status='failed', error_message=? where id=?"
+                    );
+                    failed.setString(1, String.valueOf(e.getMessage()).substring(0, Math.min(255, String.valueOf(e.getMessage()).length())));
+                    failed.setLong(2, reservationId);
+                    failed.executeUpdate();
+                    failed.close();
+                } else if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (Exception ignored) {
+            }
+            if (e instanceof SQLException && ((SQLException) e).getErrorCode() == 1062) {
+                player.sendMessage(MessageCreator.createServerAlertMessage("Bạn đã nhập mã quà tặng này rồi.", ""));
+            } else {
+                player.sendMessage(MessageCreator.createServerAlertMessage("Không thể nhận gift code. Vui lòng liên hệ admin.", ""));
+            }
         } finally {
             try {
-                connPool.free(conn);
+                if (rs != null) {
+                    rs.close();
+                }
             } catch (Exception exception) {
             }
             try {
-                pre1.close();
+                if (pre1 != null) {
+                    pre1.close();
+                }
+            } catch (Exception exception) {
+            }
+            try {
+                if (conn != null) {
+                    if (!reservationCommitted && !conn.getAutoCommit()) {
+                        conn.rollback();
+                    }
+                    conn.setAutoCommit(true);
+                    connPool.free(conn);
+                }
             } catch (Exception exception) {
             }
         }
@@ -12430,7 +12514,7 @@ public class Database {
             }
         } catch (Exception ignored) {
         }
-        int totalPlay = (int) (System.currentTimeMillis() - p.timePlay) / 60000;
+        final int totalPlay = p.getUnpersistedPlayMinutes(System.currentTimeMillis());
         StringBuilder potion = new StringBuilder(String.valueOf(p.getxu()));
         StringBuilder skill = new StringBuilder(String.valueOf(p.skill[0]));
         String basic = String.valueOf(p.strength) + "," + p.agitity + "," + p.spirit + "," + p.health + "," + p.luck + "," + p.basepoint + "," + p.skillpoint;
@@ -12547,6 +12631,7 @@ public class Database {
             pre.setInt(27, p.charDBID);
             try {
                 pre.execute();
+                p.markPlayMinutesPersisted(totalPlay);
             } catch (Exception e) {
                 e.printStackTrace();
                 try {
@@ -12801,7 +12886,7 @@ public class Database {
             }
         } catch (Exception ignored) {
         }
-        int totalPlay = (int) (System.currentTimeMillis() - p.timePlay) / 60000;
+        final int totalPlay = p.getUnpersistedPlayMinutes(System.currentTimeMillis());
         StringBuilder potion = new StringBuilder(String.valueOf(p.getxu()));
         StringBuilder skill = new StringBuilder(String.valueOf(p.skill[0]));
         String basic = String.valueOf(p.strength) + "," + p.agitity + "," + p.spirit + "," + p.health + "," + p.luck + "," + p.basepoint + "," + p.skillpoint;
@@ -12914,6 +12999,7 @@ public class Database {
             pre.setInt(24, p.charDBID);
             try {
                 pre.execute();
+                p.markPlayMinutesPersisted(totalPlay);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("LOI excute char " + e);
@@ -13024,7 +13110,10 @@ public class Database {
     public void saveCharGemBackup(Connection conn, String allGem, int chardbid, String allGemLock) {
     }
 
-    public void saveCharGem(String allGem, int chardbid, String allGemLock) {
+    public boolean saveCharGem(String allGem, int chardbid, String allGemLock) {
+        if (chardbid <= 0 || allGem == null || allGemLock == null) {
+            return false;
+        }
         Connection conn = null;
         PreparedStatement pre = null;
         StringBuilder listtemplate = new StringBuilder("0");
@@ -13034,42 +13123,33 @@ public class Database {
             for (int i = 1; i < Map.gemTemplate.length; ++i) {
                 listtemplate.append(",").append(i);
             }
-            final String sql = "insert tob_gem_new(owner,listtemplate,soluong,slock) values (?,?,?,?)";
+            // Dùng một câu upsert để không còn nhánh insert/update che mất lỗi lưu nguyên liệu.
+            final String sql = "INSERT INTO tob_gem_new(owner,listtemplate,soluong,slock) VALUES (?,?,?,?) "
+                    + "ON DUPLICATE KEY UPDATE listtemplate=VALUES(listtemplate),soluong=VALUES(soluong),slock=VALUES(slock)";
             pre = conn.prepareStatement(sql);
             pre.setInt(1, chardbid);
             pre.setString(2, listtemplate.toString());
             pre.setString(3, allGem);
             pre.setString(4, allGemLock);
-            pre.execute();
+            pre.executeUpdate();
+            return true;
         } catch (Exception e) {
-            try {
-                final String sql = "update tob_gem_new set listtemplate=?,soluong=?,slock=? where owner=?";
-                pre = conn.prepareStatement(sql);
-                pre.setString(1, listtemplate.toString());
-                pre.setString(2, allGem);
-                pre.setString(3, allGemLock);
-                pre.setInt(4, chardbid);
-                pre.execute();
-            } catch (Exception e2) {
-                e2.printStackTrace();
-            }
+            e.printStackTrace();
+            Logger.logError(e, "logs/players/save-gem-" + chardbid + ".txt");
+            return false;
         } finally {
             try {
-                pre.close();
+                if (pre != null) {
+                    pre.close();
+                }
             } catch (Exception ignored) {
             }
             try {
-                Database.connPool.free(conn);
+                if (conn != null) {
+                    Database.connPool.free(conn);
+                }
             } catch (Exception ignored) {
             }
-        }
-        try {
-            pre.close();
-        } catch (Exception ignored) {
-        }
-        try {
-            Database.connPool.free(conn);
-        } catch (Exception ignored) {
         }
     }
 

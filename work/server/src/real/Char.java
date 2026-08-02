@@ -275,6 +275,7 @@ public class Char extends LiveActor {
     public byte[] attNguHanh;
     public byte[] attNguHanhAnimal;
     public long timePlay;
+    public long lastPlaytimePersistAt;
     public long startPlay;
     public boolean isAdmin;
     public boolean beAttack;
@@ -338,6 +339,8 @@ public class Char extends LiveActor {
     public boolean isOnlineToDay;
     private long millisOnlineStart;
     private long millisOnline;
+    private static final long INITIAL_AUTO_SAVE_DELAY_MS = 60_000L;
+    private static final int[] AUTO_SAVE_DELAY_SECONDS = {60, 90, 120};
     private long timeSave;
     public Monster monsTerThuThap;
     public Vector<Item> itemChange5;
@@ -5444,7 +5447,7 @@ public class Char extends LiveActor {
         this.isOnlineToDay = false;
         this.millisOnlineStart = 0L;
         this.millisOnline = 0L;
-        this.timeSave = System.currentTimeMillis() + 7200000L;
+        this.timeSave = System.currentTimeMillis() + INITIAL_AUTO_SAVE_DELAY_MS;
         this.timeNextRegion = -1;
         this.lastTimeNghienBot = -1;
         this.monsTerThuThap = null;
@@ -5690,6 +5693,7 @@ public class Char extends LiveActor {
         this.nhomThidau = -1;
         this.timeHs = Char.timeAddMoreHs;
         this.timePlay = System.currentTimeMillis();
+        this.lastPlaytimePersistAt = this.timePlay;
         this.startPlay = this.timePlay;
         this.gender = Char.GENDER_OF_CLAZZ[this.charClass];
         this.session = conn;
@@ -7969,6 +7973,22 @@ public class Char extends LiveActor {
         }
     }
 
+    public synchronized int getUnpersistedPlayMinutes(final long now) {
+        final long baseTime = Math.max(this.timePlay, this.lastPlaytimePersistAt);
+        if (now <= baseTime) {
+            return 0;
+        }
+        return (int) ((now - baseTime) / 60000L);
+    }
+
+    public synchronized void markPlayMinutesPersisted(final int minutes) {
+        if (minutes <= 0) {
+            return;
+        }
+        final long baseTime = Math.max(this.timePlay, this.lastPlaytimePersistAt);
+        this.lastPlaytimePersistAt = baseTime + minutes * 60000L;
+    }
+
     @Override
     public void update() {
         if (this.isBot != -1) {
@@ -8597,9 +8617,14 @@ public class Char extends LiveActor {
             this.allGemUse = new int[Map.gemTemplate.length];
             this.allGemGetLock = new int[Map.gemTemplate.length];
             this.allGemUseLock = new int[Map.gemTemplate.length];
-            final short[] time = {120, 150, 180, 210};
-            this.timeSave = System.currentTimeMillis() + time[Map.r.nextInt(time.length)] * 60 * 1000;
+            this.scheduleNextAutoSave();
         }
+    }
+
+    private void scheduleNextAutoSave() {
+        // Lưu ngẫu nhiên trong khoảng ngắn để tránh dồn toàn bộ người chơi vào cùng một thời điểm.
+        int delaySeconds = AUTO_SAVE_DELAY_SECONDS[Map.r.nextInt(AUTO_SAVE_DELAY_SECONDS.length)];
+        this.timeSave = System.currentTimeMillis() + delaySeconds * 1000L;
     }
 
     public void doAddGifThungGoNuiChauBau(final int lv) {
@@ -14196,8 +14221,7 @@ public class Char extends LiveActor {
                 }
             } catch (final Exception ex13) {
             }
-            final short[] time = {120, 150, 180, 210};
-            this.timeSave = System.currentTimeMillis() + time[Map.r.nextInt(time.length)] * 60 * 1000;
+            this.scheduleNextAutoSave();
             String noCp = "Chơi quá 180 phút mỗi ngày sẽ hại sức khoẻ.";
             try {
                 if (Map.checkRcvXP && Map.openLog) {

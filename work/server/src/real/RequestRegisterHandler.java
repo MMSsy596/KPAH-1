@@ -9,7 +9,7 @@ import java.io.IOException;
 import real.cmd.ICommandHandler;
 import server.TeamServer;
 
-/** Local replacement for the legacy Teamobi HTTP/SMS account registration. */
+/** Luồng đăng ký trực tiếp thay thế dịch vụ HTTP/SMS Teamobi cũ. */
 public class RequestRegisterHandler implements ICommandHandler {
 
     public static boolean checkInfoLogin(String username) {
@@ -43,9 +43,9 @@ public class RequestRegisterHandler implements ICommandHandler {
             session.sendMessage(MessageCreator.createServerAlertMessage(Text.REGIST_ERR_PASS, ""));
             return;
         }
-        if (!TeamServer.isServerLocal()) {
+        if (!TeamServer.isRegistrationEnabled()) {
             session.sendMessage(MessageCreator.createServerAlertMessage(
-                    "Đăng ký trực tiếp chỉ được bật trên máy chủ local.", ""));
+                    "Đăng ký trực tiếp chưa được bật trên máy chủ này.", ""));
             return;
         }
 
@@ -66,6 +66,6 @@ public class RequestRegisterHandler implements ICommandHandler {
     }
 
     public static void doProcessInput(Session session, Message message) {
-        // Local registration completes immediately and never opens the old SMS flow.
+        // Đăng ký hoàn tất ngay trên server và không mở lại luồng SMS cũ.
     }
 }
